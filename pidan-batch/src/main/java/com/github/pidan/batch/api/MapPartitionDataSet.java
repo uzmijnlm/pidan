@@ -20,7 +20,7 @@ public class MapPartitionDataSet<IN, OUT> extends DataSet<OUT> {
 
     @Override
     public Partition[] getPartitions() {
-        return new Partition[0];
+        return parentDataSet.getPartitions();
     }
 
     @Override

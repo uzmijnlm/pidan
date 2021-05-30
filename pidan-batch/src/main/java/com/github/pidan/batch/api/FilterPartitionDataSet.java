@@ -20,7 +20,7 @@ public class FilterPartitionDataSet<ROW> extends DataSet<ROW> {
 
     @Override
     public Partition[] getPartitions() {
-        return new Partition[0];
+        return parentDataSet.getPartitions();
     }
 
     @Override

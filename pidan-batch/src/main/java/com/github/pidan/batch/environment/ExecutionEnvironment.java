@@ -2,22 +2,26 @@ package com.github.pidan.batch.environment;
 
 
 import com.github.pidan.batch.api.CollectionDataSource;
+import com.github.pidan.batch.api.DataSet;
+import com.github.pidan.core.function.Foreach;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Iterator;
 
-public class ExecutionEnvironment {
+public interface ExecutionEnvironment {
 
-    public static ExecutionEnvironment getExecutionEnvironment() {
+    static ExecutionEnvironment getExecutionEnvironment() {
         return new LocalExecutionEnvironment();
     }
 
-    @SafeVarargs
-    public final <X> CollectionDataSource<X> fromElements(X... data) {
+    default <X> CollectionDataSource<X> fromElements(X... data) {
         return fromCollection(Arrays.asList(data));
     }
 
-    public <X> CollectionDataSource<X> fromCollection(Collection<X> data) {
+    default  <X> CollectionDataSource<X> fromCollection(Collection<X> data) {
         return new CollectionDataSource<>(this, data);
     }
+
+    <ROW> void runJob(DataSet<ROW> dataSet, Foreach<Iterator<ROW>> foreach);
 }

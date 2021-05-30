@@ -19,21 +19,14 @@ public class WordCount {
                         .flatMap(input -> input.toLowerCase().split("\\W+"))
                         .filter(input -> !"".equals(input.trim()));
 
-        DataSet<Tuple2<String, Integer>> result = words.map(x -> Tuple2.of(x, 1));
+        DataSet<Tuple2<String, Integer>> result = words.map(x -> Tuple2.of(x, 1))
+                .groupBy(x -> x.f0)
+                .reduce((x, y) ->
+                        Tuple2.of(x.f0, x.f1 + y.f1)
+                );
 
         // 4.触发计算。
-        result.collect();
-
-
-//    DataSet<Tuple2<String, Integer>> result = words.map(x -> Tuple2.of(x, 1))
-//            .groupBy(x -> x.f1())
-//            .reduce((x, y) ->
-//                    Tuple2.of(x.f1(), x.f2() + y.f2())
-//            );
-
-
-        // 4.触发计算。
-//    result.foreach(x -> System.out.println(x.f1() + ": " + x.f2()));
+        result.foreach(x -> System.out.println(x.f0 + ": " + x.f1));
 
     }
 

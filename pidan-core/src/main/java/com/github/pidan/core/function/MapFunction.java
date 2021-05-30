@@ -1,7 +1,5 @@
 package com.github.pidan.core.function;
 
-import java.io.Serializable;
-
-public interface MapFunction<IN, OUT> extends Serializable {
+public interface MapFunction<IN, OUT> extends Function {
     OUT map(IN input);
 }

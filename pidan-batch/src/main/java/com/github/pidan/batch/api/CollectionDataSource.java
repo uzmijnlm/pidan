@@ -17,11 +17,28 @@ public class CollectionDataSource<E> extends DataSet<E> {
 
     @Override
     public Partition[] getPartitions() {
-        return new Partition[0];
+        return new Partition[]{new ParallelCollectionPartition<>(0, collection)};
     }
 
     @Override
     public Iterator<E> compute(Partition partition) {
         return collection.iterator();
+    }
+
+    private static class ParallelCollectionPartition<ROW>
+            extends Partition
+    {
+        private final Collection<ROW> collection;
+
+        public ParallelCollectionPartition(int index, Collection<ROW> collection)
+        {
+            super(index);
+            this.collection = collection;
+        }
+
+        public Collection<ROW> getCollection()
+        {
+            return collection;
+        }
     }
 }
