@@ -16,11 +16,15 @@ public interface ExecutionEnvironment {
     }
 
     default <X> CollectionDataSource<X> fromElements(X... data) {
-        return fromCollection(Arrays.asList(data));
+        return fromCollection(Arrays.asList(data), 1);
     }
 
     default  <X> CollectionDataSource<X> fromCollection(Collection<X> data) {
-        return new CollectionDataSource<>(this, data);
+        return new CollectionDataSource<>(this, data, 1);
+    }
+
+    default  <X> CollectionDataSource<X> fromCollection(Collection<X> data, int parallelism) {
+        return new CollectionDataSource<>(this, data, parallelism);
     }
 
     <ROW> void runJob(DataSet<ROW> dataSet, Foreach<Iterator<ROW>> foreach);
