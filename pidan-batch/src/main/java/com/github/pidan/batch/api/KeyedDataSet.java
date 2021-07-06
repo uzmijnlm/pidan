@@ -3,6 +3,7 @@ package com.github.pidan.batch.api;
 import com.github.pidan.core.Partition;
 import com.github.pidan.core.function.KeySelector;
 import com.github.pidan.core.function.ReduceFunction;
+import com.github.pidan.core.tuple.Tuple2;
 import com.google.common.collect.ImmutableList;
 
 import java.util.ArrayList;
@@ -35,4 +36,19 @@ public class KeyedDataSet<KEY, ROW> {
         return parentDataSet.getExecutionEnvironment().fromCollection(out);
     }
 
+    public DataSet<Tuple2<KEY, Integer>> count() {
+        Partition[] partitions = parentDataSet.getPartitions();
+
+        List<ROW> list = new ArrayList<>();
+        for (Partition split : partitions) {
+            Iterator<ROW> iterator = parentDataSet.compute(split);
+            list.addAll(ImmutableList.copyOf(iterator));
+        }
+
+        Map<KEY, List<ROW>> groupBy = list.stream().collect(Collectors.groupingBy(keySelector::getKey));
+        List<Tuple2<KEY, Integer>> collect = groupBy.entrySet().stream()
+                .map(entry -> Tuple2.of(entry.getKey(), entry.getValue().size()))
+                .collect(Collectors.toList());
+        return parentDataSet.getExecutionEnvironment().fromCollection(collect);
+    }
 }

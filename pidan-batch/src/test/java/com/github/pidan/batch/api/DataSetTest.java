@@ -64,6 +64,33 @@ public class DataSetTest {
     }
 
     @Test
+    public void testCount()
+    {
+        DataSet<String> dataSet = env.fromElements("to be", "or not to be");
+        DataSet<Tuple2<String, Integer>> tuples = dataSet.flatMap((FlatMapFunction<String, String>) (input, collector) -> {
+            String[] words = input.split("\\W+");
+            for (String word : words) {
+                collector.collect(word);
+            }
+        }).map(word -> new Tuple2<>(word, 1));
+        List<Tuple2<String, Integer>> result = tuples
+                .groupBy(x -> x.f0)
+                .count()
+                .collect();
+        StringBuilder sb = new StringBuilder();
+        for (Tuple2<String, Integer> tuple2 : result) {
+            String word = tuple2.f0;
+            Integer count = tuple2.f1;
+            sb.append(word);
+            sb.append(",");
+            sb.append(count);
+            sb.append("\n");
+        }
+        String expectedString = "not,1\nor,1\nbe,2\nto,2\n";
+        Assert.assertEquals(sb.toString(), expectedString);
+    }
+
+    @Test
     public void testFromCollectionParallel()
     {
         DataSet<String> dataSet = env.fromCollection(Arrays.asList("1", "2", "3"), 2);
