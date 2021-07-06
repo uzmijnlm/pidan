@@ -72,4 +72,16 @@ public class DataSetTest {
         List<Integer> mapList = mapDataSet.collect();
         Assert.assertEquals(Arrays.asList(1, 2, 3), mapList);
     }
+
+    @Test
+    public void testReadTextFile() {
+        DataSet<String> dataSet = env.textFile("src/test/resources/words.txt");
+        List<String> collect = dataSet.flatMap((FlatMapFunction<String, String>) (input, collector) -> {
+            String[] words = input.split("\\W+");
+            for (String word : words) {
+                collector.collect(word);
+            }
+        }).collect();
+        Assert.assertEquals(Arrays.asList("to", "be", "or", "not", "to", "be"), collect);
+    }
 }

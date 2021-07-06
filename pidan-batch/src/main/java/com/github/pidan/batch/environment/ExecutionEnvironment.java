@@ -3,6 +3,7 @@ package com.github.pidan.batch.environment;
 
 import com.github.pidan.batch.api.CollectionDataSource;
 import com.github.pidan.batch.api.DataSet;
+import com.github.pidan.batch.api.TextFileDataSource;
 import com.github.pidan.core.function.Foreach;
 
 import java.util.Arrays;
@@ -28,4 +29,8 @@ public interface ExecutionEnvironment {
     }
 
     <ROW> void runJob(DataSet<ROW> dataSet, Foreach<Iterator<ROW>> foreach);
+
+    default TextFileDataSource textFile(String path) {
+        return new TextFileDataSource(this, path);
+    }
 }
