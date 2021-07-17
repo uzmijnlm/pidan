@@ -20,4 +20,8 @@ public class Partition
     {
         return super.equals(obj);
     }
+
+    public int getIndex() {
+        return index;
+    }
 }

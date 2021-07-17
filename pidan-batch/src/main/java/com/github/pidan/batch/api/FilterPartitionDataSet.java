@@ -27,4 +27,9 @@ public class FilterPartitionDataSet<ROW> extends DataSet<ROW> {
     public Iterator<ROW> compute(Partition partition) {
         return Iterators.filter(parentDataSet.compute(partition), filterFunction::filter);
     }
+
+    @Override
+    public DataSet<?> getParent() {
+        return parentDataSet;
+    }
 }

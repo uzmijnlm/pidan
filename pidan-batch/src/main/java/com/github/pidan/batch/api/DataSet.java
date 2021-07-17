@@ -5,13 +5,10 @@ import com.github.pidan.core.Partition;
 import com.github.pidan.core.function.*;
 import com.google.common.collect.ImmutableList;
 
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public abstract class DataSet<ROW> {
 
@@ -26,6 +23,10 @@ public abstract class DataSet<ROW> {
     }
 
     public abstract Partition[] getPartitions();
+
+    public int numPartitions() {
+        return getPartitions().length;
+    }
 
     public abstract Iterator<ROW> compute(Partition partition);
 
@@ -51,18 +52,9 @@ public abstract class DataSet<ROW> {
     }
 
     public List<ROW> collect() {
-        Partition[] partitions = getPartitions();
-        ExecutorService executors = Executors.newFixedThreadPool(partitions.length);
-        try {
-            return Stream.of(partitions).parallel().map(partition -> CompletableFuture.supplyAsync(() -> {
-                Iterator<ROW> iterator = compute(partition);
-                return ImmutableList.copyOf(iterator);
-            }, executors)).flatMap(x -> x.join().stream())
-                    .collect(Collectors.toList());
-        }
-        finally {
-            executors.shutdown();
-        }
+        return this.getExecutionEnvironment().runJob(this, ImmutableList::copyOf).stream()
+                .flatMap(Collection::stream)
+                .collect(Collectors.toList());
     }
 
     public void foreach(Foreach<ROW> foreach) {
@@ -70,7 +62,11 @@ public abstract class DataSet<ROW> {
             while (iterator.hasNext()) {
                 foreach.apply(iterator.next());
             }
+            return null;
         });
     }
 
+    public DataSet<?> getParent() {
+        return null;
+    }
 }

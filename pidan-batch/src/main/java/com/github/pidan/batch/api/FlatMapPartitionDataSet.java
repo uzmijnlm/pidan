@@ -44,4 +44,9 @@ public class FlatMapPartitionDataSet<IN, OUT> extends DataSet<OUT> {
             return list.iterator();
         }));
     }
+
+    @Override
+    public DataSet<?> getParent() {
+        return parentDataSet;
+    }
 }

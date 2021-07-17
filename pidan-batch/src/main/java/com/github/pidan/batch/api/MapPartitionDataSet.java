@@ -27,4 +27,9 @@ public class MapPartitionDataSet<IN, OUT> extends DataSet<OUT> {
     public Iterator<OUT> compute(Partition partition) {
         return Iterators.transform(parentDataSet.compute(partition), mapFunction::map);
     }
+
+    @Override
+    public DataSet<?> getParent() {
+        return parentDataSet;
+    }
 }

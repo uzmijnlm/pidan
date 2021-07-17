@@ -2,9 +2,22 @@ package com.github.pidan.core.function;
 
 public class HashPartitioner<KEY> extends Partitioner<KEY> {
 
-    @Override
-    public int getPartition(KEY key, int numPartitions)
+    private final int numPartitions;
+
+    public HashPartitioner(int numPartitions)
     {
-        return (key.hashCode() & 2147483647) % numPartitions;
+        this.numPartitions = numPartitions;
+    }
+
+    @Override
+    public int numPartitions()
+    {
+        return numPartitions;
+    }
+
+    @Override
+    public int getPartition(KEY key)
+    {
+        return (key.hashCode() & Integer.MAX_VALUE) % numPartitions;
     }
 }
