@@ -1,9 +1,11 @@
 package com.github.pidan.batch.api;
 
 import com.github.pidan.batch.environment.ExecutionEnvironment;
+import com.github.pidan.batch.shuffle.ShuffleManager;
 import com.github.pidan.core.function.FlatMapFunction;
 import com.github.pidan.core.tuple.Tuple2;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -12,6 +14,11 @@ import java.util.List;
 public class DataSetTest {
 
     private final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+
+    @Before
+    public void setup() {
+        ShuffleManager.clear();
+    }
 
     @Test
     public void testCollect()

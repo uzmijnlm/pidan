@@ -2,7 +2,7 @@ package com.github.pidan.batch.api;
 
 import com.github.pidan.core.Partition;
 import com.github.pidan.core.function.KeySelector;
-import com.github.pidan.core.function.ReduceFunction;
+import com.github.pidan.core.function.MapFunction;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -13,15 +13,15 @@ import java.util.stream.Collectors;
 public class AggDataSet<KEY, ROW> extends DataSet<ROW> {
     private final ShuffleOperator<KEY, ROW> shuffleOperator;
     private final KeySelector<ROW, KEY> groupKeySelector;
-    private final ReduceFunction<ROW> reduceFunction;
+    private final MapFunction<Iterator<ROW>, ROW> aggMapFunction;
 
     public AggDataSet(ShuffleOperator<KEY, ROW> shuffleOperator,
                       KeySelector<ROW, KEY> groupKeySelector,
-                      ReduceFunction<ROW> reduceFunction) {
+                      MapFunction<Iterator<ROW>, ROW> aggMapFunction) {
         super(shuffleOperator.getExecutionEnvironment());
         this.shuffleOperator = shuffleOperator;
         this.groupKeySelector = groupKeySelector;
-        this.reduceFunction = reduceFunction;
+        this.aggMapFunction = aggMapFunction;
     }
 
 
@@ -39,8 +39,19 @@ public class AggDataSet<KEY, ROW> extends DataSet<ROW> {
             records.add(record);
         }
         Map<KEY, List<ROW>> groupBy = records.stream().collect(Collectors.groupingBy(groupKeySelector::getKey));
-        List<ROW> out = groupBy.values().stream().map(x -> x.stream().reduce(reduceFunction::reduce).get()).collect(Collectors.toList());
-        return out.iterator();
+        Iterator<Iterator<ROW>> iterators = groupBy.values().stream().map(List::iterator).iterator();
+
+        return new Iterator<ROW>() {
+            @Override
+            public boolean hasNext() {
+                return iterators.hasNext();
+            }
+
+            @Override
+            public ROW next() {
+                return aggMapFunction.map(iterators.next());
+            }
+        };
     }
 
     @Override

@@ -24,4 +24,8 @@ public class ShuffleManager {
         Iterator<? extends Iterator<?>> iterators = values.stream().map(queue -> queue.stream().iterator()).iterator();
         return Iterators.concat(iterators);
     }
+
+    public static void clear() {
+        reduceTaskMap.clear();
+    }
 }
