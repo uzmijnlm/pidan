@@ -3,11 +3,15 @@ package com.github.pidan.batch.shuffle;
 import com.github.pidan.batch.api.DataSet;
 import com.github.pidan.core.Partition;
 
+import java.util.Iterator;
+
 public class ShuffleMapStage implements Stage {
     private final DataSet<?> dataSet;
+    private final int stageId;
 
-    public ShuffleMapStage(DataSet<?> dataSet) {
+    public ShuffleMapStage(DataSet<?> dataSet, int stageId) {
         this.dataSet = dataSet;
+        this.stageId = stageId;
     }
 
     @Override
@@ -15,7 +19,7 @@ public class ShuffleMapStage implements Stage {
         return dataSet.getPartitions();
     }
 
-    public DataSet<?> getDataSet() {
-        return dataSet;
+    public Iterator<?> compute(Partition partition) {
+        return dataSet.compute(partition, () -> stageId);
     }
 }

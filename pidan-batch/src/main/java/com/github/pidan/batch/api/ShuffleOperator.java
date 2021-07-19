@@ -1,7 +1,7 @@
 package com.github.pidan.batch.api;
 
-import com.github.pidan.batch.shuffle.ShuffleManager;
 import com.github.pidan.core.Partition;
+import com.github.pidan.core.TaskContext;
 
 import java.util.Iterator;
 import java.util.stream.IntStream;
@@ -22,9 +22,10 @@ public class ShuffleOperator<KEY, ROW> extends DataSet<ROW> {
     }
 
     @Override
-    public Iterator<ROW> compute(Partition partition) {
+    public Iterator<ROW> compute(Partition partition, TaskContext taskContext) {
         int index = partition.getIndex();
-        return (Iterator<ROW>) ShuffleManager.read(index);
+        ShuffleReader shuffleReader = new ShuffleReader(index, taskContext.getStageId() - 1);
+        return (Iterator<ROW>) shuffleReader.read();
     }
 
     @Override

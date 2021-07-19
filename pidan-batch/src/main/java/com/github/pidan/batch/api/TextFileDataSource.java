@@ -2,6 +2,7 @@ package com.github.pidan.batch.api;
 
 import com.github.pidan.batch.environment.ExecutionEnvironment;
 import com.github.pidan.core.Partition;
+import com.github.pidan.core.TaskContext;
 
 import java.io.File;
 import java.io.IOException;
@@ -20,11 +21,11 @@ public class TextFileDataSource extends DataSet<String> {
     @Override
     public Partition[] getPartitions() {
         File file = new File(path);
-        return new TextFilePartition[] {new TextFilePartition(0, file)};
+        return new TextFilePartition[]{new TextFilePartition(0, file)};
     }
 
     @Override
-    public Iterator<String> compute(Partition partition) {
+    public Iterator<String> compute(Partition partition, TaskContext taskContext) {
         TextFilePartition textFilePartition = (TextFilePartition) partition;
         try {
             return Files.readAllLines(Paths.get(textFilePartition.file.toURI())).iterator();

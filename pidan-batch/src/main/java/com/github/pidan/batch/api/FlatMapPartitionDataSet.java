@@ -1,6 +1,7 @@
 package com.github.pidan.batch.api;
 
 import com.github.pidan.core.Partition;
+import com.github.pidan.core.TaskContext;
 import com.github.pidan.core.function.FlatMapFunction;
 import com.github.pidan.core.function.MapFunction;
 import com.google.common.collect.Iterators;
@@ -24,7 +25,7 @@ public class FlatMapPartitionDataSet<IN, OUT> extends DataSet<OUT> {
     public FlatMapPartitionDataSet(DataSet<IN> parentDataSet, MapFunction<IN, OUT[]> mapFunction) {
         super(parentDataSet.getExecutionEnvironment());
         this.flatMapFunction = (input, collector) -> {
-            for (OUT value: mapFunction.map(input)) {
+            for (OUT value : mapFunction.map(input)) {
                 collector.collect(value);
             }
         };
@@ -37,8 +38,8 @@ public class FlatMapPartitionDataSet<IN, OUT> extends DataSet<OUT> {
     }
 
     @Override
-    public Iterator<OUT> compute(Partition partition) {
-        return Iterators.concat(Iterators.transform(parentDataSet.compute(partition), row -> {
+    public Iterator<OUT> compute(Partition partition, TaskContext taskContext) {
+        return Iterators.concat(Iterators.transform(parentDataSet.compute(partition, taskContext), row -> {
             List<OUT> list = new ArrayList<>();
             flatMapFunction.flatMap(row, list::add);
             return list.iterator();

@@ -1,15 +1,17 @@
 package com.github.pidan.batch.api;
 
 import com.github.pidan.batch.environment.ExecutionEnvironment;
-import com.github.pidan.batch.shuffle.ShuffleManager;
 import com.github.pidan.core.function.FlatMapFunction;
 import com.github.pidan.core.tuple.Tuple2;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.List;
+
+import static com.github.pidan.core.configuration.Constant.SHUFFLE_DATA_DIRECTORY;
 
 public class DataSetTest {
 
@@ -17,20 +19,21 @@ public class DataSetTest {
 
     @Before
     public void setup() {
-        ShuffleManager.clear();
+        File file = new File(SHUFFLE_DATA_DIRECTORY);
+        if (file.delete()) {
+            throw new RuntimeException("Delete " + file.getAbsolutePath() + " failed");
+        }
     }
 
     @Test
-    public void testCollect()
-    {
+    public void testCollect() {
         DataSet<Integer> dataSet = env.fromElements(1, 2, 3);
         List<Integer> collect = dataSet.collect();
         Assert.assertEquals(Arrays.asList(1, 2, 3), collect);
     }
 
     @Test
-    public void testFlatMapByFlatMapFunction()
-    {
+    public void testFlatMapByFlatMapFunction() {
         DataSet<String> dataSet = env.fromElements("to be", "or not to be");
         DataSet<String> flatMappedDataSet = dataSet.flatMap((FlatMapFunction<String, String>) (input, collector) -> {
             String[] words = input.split("\\W+");
@@ -43,8 +46,7 @@ public class DataSetTest {
     }
 
     @Test
-    public void testReduce()
-    {
+    public void testReduce() {
         DataSet<String> dataSet = env.fromElements("to be", "or not to be");
         DataSet<Tuple2<String, Integer>> tuples = dataSet.flatMap((FlatMapFunction<String, String>) (input, collector) -> {
             String[] words = input.split("\\W+");
@@ -71,8 +73,7 @@ public class DataSetTest {
     }
 
     @Test
-    public void testCount()
-    {
+    public void testCount() {
         DataSet<String> dataSet = env.fromElements("to be", "or not to be");
         DataSet<Tuple2<String, Integer>> tuples = dataSet.flatMap((FlatMapFunction<String, String>) (input, collector) -> {
             String[] words = input.split("\\W+");
@@ -98,8 +99,7 @@ public class DataSetTest {
     }
 
     @Test
-    public void testFromCollectionParallel()
-    {
+    public void testFromCollectionParallel() {
         DataSet<String> dataSet = env.fromCollection(Arrays.asList("1", "2", "3"), 2);
 
         DataSet<Integer> mapDataSet = dataSet.map(Integer::parseInt);

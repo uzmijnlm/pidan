@@ -1,6 +1,6 @@
 package com.github.pidan.core.tuple;
 
-public class Tuple2<T0, T1> extends Tuple{
+public class Tuple2<T0, T1> extends Tuple {
 
     public T0 f0;
     public T1 f1;

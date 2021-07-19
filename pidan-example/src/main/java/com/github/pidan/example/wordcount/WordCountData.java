@@ -5,7 +5,7 @@ import com.github.pidan.batch.environment.ExecutionEnvironment;
 
 public class WordCountData {
     private static final String[] WORDS =
-            new String[] {
+            new String[]{
                     "To be, or not to be,--that is the question:--",
                     "Whether 'tis nobler in the mind to suffer",
                     "The slings and arrows of outrageous fortune",

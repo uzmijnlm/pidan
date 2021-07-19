@@ -1,6 +1,7 @@
 package com.github.pidan.batch.api;
 
 import com.github.pidan.core.Partition;
+import com.github.pidan.core.TaskContext;
 import com.github.pidan.core.function.KeySelector;
 import com.github.pidan.core.function.MapFunction;
 
@@ -31,8 +32,8 @@ public class AggDataSet<KEY, ROW> extends DataSet<ROW> {
     }
 
     @Override
-    public Iterator<ROW> compute(Partition partition) {
-        Iterator<ROW> iterator = shuffleOperator.compute(partition);
+    public Iterator<ROW> compute(Partition partition, TaskContext taskContext) {
+        Iterator<ROW> iterator = shuffleOperator.compute(partition, taskContext);
         List<ROW> records = new ArrayList<>();
         while (iterator.hasNext()) {
             ROW record = iterator.next();

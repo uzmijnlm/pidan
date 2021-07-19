@@ -25,19 +25,17 @@ public class LocalExecutionEnvironment implements ExecutionEnvironment {
         ExecutorService executors = Executors.newFixedThreadPool(partitions.length);
         try {
             return Stream.of(resultStage.getPartitions()).map(partition -> CompletableFuture.supplyAsync(() -> {
-                Iterator<ROW> iterator = dataSet.compute(partition);
+                Iterator<ROW> iterator = resultStage.compute(partition);
                 return function.apply(iterator);
             }, executors)).collect(Collectors.toList()).stream()
-                    .map(x -> x.join())
+                    .map(CompletableFuture::join)
                     .collect(Collectors.toList());
-        }
-        finally {
+        } finally {
             executors.shutdown();
         }
     }
 
-    private <ROW> ResultStage<ROW> runShuffleMapStage(DataSet<ROW> dataSet)
-    {
+    private <ROW> ResultStage<ROW> runShuffleMapStage(DataSet<ROW> dataSet) {
         List<DataSet<?>> shuffleMapOperators = new ArrayList<>();
 
         for (DataSet<?> parent = dataSet; parent != null; parent = parent.getParent()) {
@@ -48,21 +46,20 @@ public class LocalExecutionEnvironment implements ExecutionEnvironment {
 
         List<ShuffleMapStage> stages = new ArrayList<>();
         for (int stageId = 0; stageId < shuffleMapOperators.size(); stageId++) {
-            stages.add(new ShuffleMapStage(shuffleMapOperators.get(shuffleMapOperators.size() - stageId - 1)));
+            stages.add(new ShuffleMapStage(shuffleMapOperators.get(shuffleMapOperators.size() - stageId - 1), stageId));
         }
 
         for (ShuffleMapStage stage : stages) {
             ExecutorService executors = Executors.newFixedThreadPool(dataSet.numPartitions());
             try {
                 Stream.of(stage.getPartitions()).map(partition -> CompletableFuture.runAsync(() -> {
-                    stage.getDataSet().compute(partition);
+                    stage.compute(partition);
                 }, executors)).collect(Collectors.toList()).forEach(CompletableFuture::join);
-            }
-            finally {
+            } finally {
                 executors.shutdown();
             }
         }
 
-        return new ResultStage<>(dataSet);
+        return new ResultStage<>(dataSet, stages.size());
     }
 }

@@ -21,11 +21,11 @@ public interface ExecutionEnvironment {
         return fromCollection(Arrays.asList(data), 1);
     }
 
-    default  <X> CollectionDataSource<X> fromCollection(Collection<X> data) {
+    default <X> CollectionDataSource<X> fromCollection(Collection<X> data) {
         return new CollectionDataSource<>(this, data, 1);
     }
 
-    default  <X> CollectionDataSource<X> fromCollection(Collection<X> data, int parallelism) {
+    default <X> CollectionDataSource<X> fromCollection(Collection<X> data, int parallelism) {
         return new CollectionDataSource<>(this, data, parallelism);
     }
 

@@ -53,7 +53,7 @@ public class KeyedDataSet<KEY, ROW> {
 
     public DataSet<Tuple2<KEY, Integer>> count() {
         ShuffleMapOperator<KEY, Tuple2<KEY, Integer>> shuffleMapOperator = new ShuffleMapOperator<>(
-                parentDataSet.map((MapFunction<ROW, Tuple2<KEY, Integer>>) input -> Tuple2.of(groupKeySelector.getKey(input), 1)),
+                parentDataSet.map((MapFunction<ROW, Tuple2<KEY, Integer>>) input -> Tuple2.of(partitionKeySelector.getKey(input), 1)),
                 (KeySelector<Tuple2<KEY, Integer>, KEY>) value -> value.f0,
                 partitioner);
         ShuffleOperator<KEY, Tuple2<KEY, Integer>> shuffleOperator = new ShuffleOperator<>(shuffleMapOperator);

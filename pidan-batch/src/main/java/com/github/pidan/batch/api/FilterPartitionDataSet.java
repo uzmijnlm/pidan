@@ -1,6 +1,7 @@
 package com.github.pidan.batch.api;
 
 import com.github.pidan.core.Partition;
+import com.github.pidan.core.TaskContext;
 import com.github.pidan.core.function.FilterFunction;
 import com.google.common.collect.Iterators;
 
@@ -24,8 +25,8 @@ public class FilterPartitionDataSet<ROW> extends DataSet<ROW> {
     }
 
     @Override
-    public Iterator<ROW> compute(Partition partition) {
-        return Iterators.filter(parentDataSet.compute(partition), filterFunction::filter);
+    public Iterator<ROW> compute(Partition partition, TaskContext taskContext) {
+        return Iterators.filter(parentDataSet.compute(partition, taskContext), filterFunction::filter);
     }
 
     @Override

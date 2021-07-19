@@ -2,6 +2,7 @@ package com.github.pidan.batch.api;
 
 import com.github.pidan.batch.environment.ExecutionEnvironment;
 import com.github.pidan.core.Partition;
+import com.github.pidan.core.TaskContext;
 import com.github.pidan.core.function.*;
 import com.google.common.collect.ImmutableList;
 
@@ -28,7 +29,7 @@ public abstract class DataSet<ROW> {
         return getPartitions().length;
     }
 
-    public abstract Iterator<ROW> compute(Partition partition);
+    public abstract Iterator<ROW> compute(Partition partition, TaskContext taskContext);
 
     public <OUT> DataSet<OUT> map(MapFunction<ROW, OUT> mapFunction) {
         return new MapPartitionDataSet<>(this, mapFunction);
@@ -38,8 +39,7 @@ public abstract class DataSet<ROW> {
         return new FlatMapPartitionDataSet<>(this, mapFunction);
     }
 
-    public <OUT> DataSet<OUT> flatMap(FlatMapFunction<ROW, OUT> flatMapFunction)
-    {
+    public <OUT> DataSet<OUT> flatMap(FlatMapFunction<ROW, OUT> flatMapFunction) {
         return new FlatMapPartitionDataSet<>(this, flatMapFunction);
     }
 
