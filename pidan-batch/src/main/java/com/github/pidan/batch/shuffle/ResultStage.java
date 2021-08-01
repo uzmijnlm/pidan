@@ -2,6 +2,7 @@ package com.github.pidan.batch.shuffle;
 
 import com.github.pidan.batch.api.DataSet;
 import com.github.pidan.core.Partition;
+import com.github.pidan.core.TaskContext;
 
 import java.util.Iterator;
 
@@ -21,7 +22,17 @@ public class ResultStage<ROW> implements Stage {
     }
 
     @Override
-    public Iterator<ROW> compute(Partition partition) {
-        return dataSet.compute(partition, () -> stageId);
+    public Iterator<ROW> compute(Partition partition, TaskContext taskContext) {
+        return dataSet.compute(partition, taskContext);
+    }
+
+    @Override
+    public int getStageId() {
+        return stageId;
+    }
+
+    @Override
+    public DataSet<?> getFinalDataSet() {
+        return dataSet;
     }
 }

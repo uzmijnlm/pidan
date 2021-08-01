@@ -6,6 +6,7 @@ import com.github.pidan.core.TaskContext;
 import com.github.pidan.core.function.*;
 import com.google.common.collect.ImmutableList;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -14,9 +15,16 @@ import java.util.stream.Collectors;
 public abstract class DataSet<ROW> {
 
     protected final ExecutionEnvironment env;
+    protected final DataSet<?>[] dataSets;
 
     protected DataSet(ExecutionEnvironment env) {
         this.env = env;
+        this.dataSets = new DataSet<?>[0];
+    }
+
+    protected DataSet(DataSet<?>... dataSets) {
+        this.env = dataSets[0].getExecutionEnvironment();
+        this.dataSets = dataSets;
     }
 
     public ExecutionEnvironment getExecutionEnvironment() {
@@ -24,6 +32,10 @@ public abstract class DataSet<ROW> {
     }
 
     public abstract Partition[] getPartitions();
+
+    public List<DataSet<?>> getDependencies() {
+        return Arrays.asList(dataSets);
+    }
 
     public int numPartitions() {
         return getPartitions().length;
@@ -68,5 +80,13 @@ public abstract class DataSet<ROW> {
 
     public DataSet<?> getParent() {
         return null;
+    }
+
+    public <I2> JoinedDataSet<ROW, I2> join(DataSet<I2> dataSet2) {
+        return new JoinedDataSet<>(this, dataSet2);
+    }
+
+    public <I2> JoinedDataSet<ROW, I2> join(DataSet<I2> dataSet2, JoinType joinType) {
+        return new JoinedDataSet<>(this, dataSet2, joinType);
     }
 }

@@ -14,7 +14,7 @@ public class FilterPartitionDataSet<ROW> extends DataSet<ROW> {
     private final DataSet<ROW> parentDataSet;
 
     public FilterPartitionDataSet(DataSet<ROW> parentDataSet, FilterFunction<ROW> filterFunction) {
-        super(parentDataSet.getExecutionEnvironment());
+        super(parentDataSet);
         this.filterFunction = filterFunction;
         this.parentDataSet = parentDataSet;
     }

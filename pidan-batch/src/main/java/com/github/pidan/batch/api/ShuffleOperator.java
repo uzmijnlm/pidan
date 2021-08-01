@@ -10,7 +10,7 @@ public class ShuffleOperator<KEY, ROW> extends DataSet<ROW> {
     private final ShuffleMapOperator<KEY, ROW> shuffleMapOperator;
 
     public ShuffleOperator(ShuffleMapOperator<KEY, ROW> shuffleMapOperator) {
-        super(shuffleMapOperator.getExecutionEnvironment());
+        super(shuffleMapOperator);
         this.shuffleMapOperator = shuffleMapOperator;
     }
 
@@ -24,7 +24,8 @@ public class ShuffleOperator<KEY, ROW> extends DataSet<ROW> {
     @Override
     public Iterator<ROW> compute(Partition partition, TaskContext taskContext) {
         int index = partition.getIndex();
-        ShuffleReader shuffleReader = new ShuffleReader(index, taskContext.getStageId() - 1);
+        int[] dependencies = taskContext.getDependStages();
+        ShuffleReader shuffleReader = new ShuffleReader(index, dependencies[0]);
         return (Iterator<ROW>) shuffleReader.read();
     }
 

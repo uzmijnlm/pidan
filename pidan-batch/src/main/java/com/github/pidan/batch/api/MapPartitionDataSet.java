@@ -14,7 +14,7 @@ public class MapPartitionDataSet<IN, OUT> extends DataSet<OUT> {
     private final DataSet<IN> parentDataSet;
 
     public MapPartitionDataSet(DataSet<IN> parentDataSet, MapFunction<IN, OUT> mapFunction) {
-        super(parentDataSet.getExecutionEnvironment());
+        super(parentDataSet);
         this.parentDataSet = parentDataSet;
         this.mapFunction = mapFunction;
     }

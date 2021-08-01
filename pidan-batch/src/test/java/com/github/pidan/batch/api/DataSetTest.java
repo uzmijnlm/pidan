@@ -8,6 +8,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -117,5 +118,49 @@ public class DataSetTest {
             }
         }).collect();
         Assert.assertEquals(Arrays.asList("to", "be", "or", "not", "to", "be"), collect);
+    }
+
+    @Test
+    public void testInnerJoin() {
+        // id, name
+        DataSet<Tuple2<Integer, String>> dataSet1 = env.fromElements(Tuple2.of(1, "Alice"), Tuple2.of(2, "Sam"), Tuple2.of(3, "Tom"));
+        // id, age
+        DataSet<Tuple2<Integer, Integer>> dataSet2 = env.fromElements(Tuple2.of(1, 18), Tuple2.of(2, 20), Tuple2.of(3, 22));
+
+        DataSet<Tuple2<Tuple2<Integer, String>, Tuple2<Integer, Integer>>> equalTo
+                = dataSet1
+                .join(dataSet2)
+                .where(x -> x.f0)
+                .equalTo(x -> x.f0);
+        List<Tuple2<Tuple2<Integer, String>, Tuple2<Integer, Integer>>> result = equalTo.collect();
+
+        List<Tuple2<Tuple2<Integer, String>, Tuple2<Integer, Integer>>> expectedResult = new ArrayList<>();
+        expectedResult.add(Tuple2.of(Tuple2.of(1, "Alice"), Tuple2.of(1, 18)));
+        expectedResult.add(Tuple2.of(Tuple2.of(2, "Sam"), Tuple2.of(2, 20)));
+        expectedResult.add(Tuple2.of(Tuple2.of(3, "Tom"), Tuple2.of(3, 22)));
+
+        Assert.assertEquals(expectedResult, result);
+    }
+
+    @Test
+    public void testLeftJoin() {
+        // id, name
+        DataSet<Tuple2<Integer, String>> dataSet1 = env.fromElements(Tuple2.of(1, "Alice"), Tuple2.of(2, "Sam"), Tuple2.of(3, "Tom"));
+        // id, age
+        DataSet<Tuple2<Integer, Integer>> dataSet2 = env.fromElements(Tuple2.of(2, 20), Tuple2.of(3, 22));
+
+        DataSet<Tuple2<Tuple2<Integer, String>, Tuple2<Integer, Integer>>> equalTo
+                = dataSet1
+                .join(dataSet2, JoinType.LEFT_JOIN)
+                .where(x -> x.f0)
+                .equalTo(x -> x.f0);
+        List<Tuple2<Tuple2<Integer, String>, Tuple2<Integer, Integer>>> result = equalTo.collect();
+
+        List<Tuple2<Tuple2<Integer, String>, Tuple2<Integer, Integer>>> expectedResult = new ArrayList<>();
+        expectedResult.add(Tuple2.of(Tuple2.of(1, "Alice"), null));
+        expectedResult.add(Tuple2.of(Tuple2.of(2, "Sam"), Tuple2.of(2, 20)));
+        expectedResult.add(Tuple2.of(Tuple2.of(3, "Tom"), Tuple2.of(3, 22)));
+
+        Assert.assertEquals(expectedResult, result);
     }
 }

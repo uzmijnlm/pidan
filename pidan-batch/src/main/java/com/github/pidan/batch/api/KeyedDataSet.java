@@ -8,33 +8,21 @@ import java.util.Iterator;
 public class KeyedDataSet<KEY, ROW> {
 
     private final DataSet<ROW> parentDataSet;
-    private final KeySelector<ROW, KEY> groupKeySelector;
-    private KeySelector<ROW, KEY> partitionKeySelector;
+    private final KeySelector<ROW, KEY> keySelector;
     private final Partitioner<KEY> partitioner;
 
-    public KeyedDataSet(DataSet<ROW> parentDataSet, KeySelector<ROW, KEY> groupKeySelector,
-                        KeySelector<ROW, KEY> partitionKeySelector, Partitioner<KEY> partitioner) {
-        this.parentDataSet = parentDataSet;
-        this.groupKeySelector = groupKeySelector;
-        this.partitionKeySelector = partitionKeySelector;
-        this.partitioner = partitioner;
-    }
-
     public KeyedDataSet(DataSet<ROW> parentDataSet, KeySelector<ROW, KEY> keySelector, Partitioner<KEY> partitioner) {
-        this(parentDataSet, keySelector, keySelector, partitioner);
+        this.parentDataSet = parentDataSet;
+        this.keySelector = keySelector;
+        this.partitioner = partitioner;
     }
 
     public KeyedDataSet(DataSet<ROW> parentDataSet, KeySelector<ROW, KEY> keySelector) {
         this(parentDataSet, keySelector, new HashPartitioner<>(parentDataSet.numPartitions()));
     }
 
-    public KeyedDataSet<KEY, ROW> partitionBy(KeySelector<ROW, KEY> keySelector) {
-        this.partitionKeySelector = keySelector;
-        return this;
-    }
-
     public DataSet<ROW> reduce(ReduceFunction<ROW> reduceFunction) {
-        ShuffleMapOperator<KEY, ROW> shuffleMapOperator = new ShuffleMapOperator<>(parentDataSet, partitionKeySelector, partitioner);
+        ShuffleMapOperator<KEY, ROW> shuffleMapOperator = new ShuffleMapOperator<>(parentDataSet, keySelector, partitioner);
         ShuffleOperator<KEY, ROW> shuffleOperator = new ShuffleOperator<>(shuffleMapOperator);
         MapFunction<Iterator<ROW>, ROW> aggMapFunction = iterator -> {
             ROW lastVal = null;
@@ -48,12 +36,12 @@ public class KeyedDataSet<KEY, ROW> {
             }
             return lastVal;
         };
-        return new AggDataSet<>(shuffleOperator, groupKeySelector, aggMapFunction);
+        return new AggDataSet<>(shuffleOperator, keySelector, aggMapFunction);
     }
 
     public DataSet<Tuple2<KEY, Integer>> count() {
         ShuffleMapOperator<KEY, Tuple2<KEY, Integer>> shuffleMapOperator = new ShuffleMapOperator<>(
-                parentDataSet.map((MapFunction<ROW, Tuple2<KEY, Integer>>) input -> Tuple2.of(partitionKeySelector.getKey(input), 1)),
+                parentDataSet.map((MapFunction<ROW, Tuple2<KEY, Integer>>) input -> Tuple2.of(keySelector.getKey(input), 1)),
                 (KeySelector<Tuple2<KEY, Integer>, KEY>) value -> value.f0,
                 partitioner);
         ShuffleOperator<KEY, Tuple2<KEY, Integer>> shuffleOperator = new ShuffleOperator<>(shuffleMapOperator);

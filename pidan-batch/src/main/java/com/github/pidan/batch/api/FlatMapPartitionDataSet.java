@@ -23,7 +23,7 @@ public class FlatMapPartitionDataSet<IN, OUT> extends DataSet<OUT> {
     }
 
     public FlatMapPartitionDataSet(DataSet<IN> parentDataSet, MapFunction<IN, OUT[]> mapFunction) {
-        super(parentDataSet.getExecutionEnvironment());
+        super(parentDataSet);
         this.flatMapFunction = (input, collector) -> {
             for (OUT value : mapFunction.map(input)) {
                 collector.collect(value);

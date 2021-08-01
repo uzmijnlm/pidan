@@ -15,7 +15,7 @@ public class ShuffleMapOperator<KEY, ROW> extends DataSet<ROW> {
     private final Partitioner<KEY> partitioner;
 
     public ShuffleMapOperator(DataSet<ROW> parentDataSet, KeySelector<ROW, KEY> partitionKeySelector, Partitioner<KEY> partitioner) {
-        super(parentDataSet.getExecutionEnvironment());
+        super(parentDataSet);
         this.parentDataSet = parentDataSet;
         this.partitionKeySelector = partitionKeySelector;
         this.partitioner = partitioner;

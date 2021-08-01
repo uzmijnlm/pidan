@@ -19,7 +19,7 @@ public class AggDataSet<KEY, ROW> extends DataSet<ROW> {
     public AggDataSet(ShuffleOperator<KEY, ROW> shuffleOperator,
                       KeySelector<ROW, KEY> groupKeySelector,
                       MapFunction<Iterator<ROW>, ROW> aggMapFunction) {
-        super(shuffleOperator.getExecutionEnvironment());
+        super(shuffleOperator);
         this.shuffleOperator = shuffleOperator;
         this.groupKeySelector = groupKeySelector;
         this.aggMapFunction = aggMapFunction;

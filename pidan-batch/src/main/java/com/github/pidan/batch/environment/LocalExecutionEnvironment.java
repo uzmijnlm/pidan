@@ -4,62 +4,85 @@ import com.github.pidan.batch.api.DataSet;
 import com.github.pidan.batch.api.ShuffleMapOperator;
 import com.github.pidan.batch.shuffle.ResultStage;
 import com.github.pidan.batch.shuffle.ShuffleMapStage;
-import com.github.pidan.core.Partition;
+import com.github.pidan.batch.shuffle.Stage;
+import com.github.pidan.core.TaskContext;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class LocalExecutionEnvironment implements ExecutionEnvironment {
 
+    private int nextStageId = 0;
+
+    // Stage是从后往前生成，因此越后执行的Stage的id反而越小。通过下面的TreeSet让Stage对象按照执行顺序排序
+    private final Set<Stage> stages = new TreeSet<>((stage1, stage2) -> stage2.getStageId() - stage1.getStageId());
+
+    // key: Stage
+    // value: 依赖的Stage的id数组
+    private final Map<Stage, Integer[]> shuffleMapStageToDependencies = new HashMap<>();
+
     @Override
     public <ROW, OUT> List<OUT> runJob(DataSet<ROW> dataSet, Function<Iterator<ROW>, OUT> function) {
-        ResultStage<ROW> resultStage = runShuffleMapStage(dataSet);
-        Partition[] partitions = dataSet.getPartitions();
-        ExecutorService executors = Executors.newFixedThreadPool(partitions.length);
-        try {
-            return Stream.of(resultStage.getPartitions()).map(partition -> CompletableFuture.supplyAsync(() -> {
-                Iterator<ROW> iterator = resultStage.compute(partition);
+        // 构造ResultStage
+        ResultStage<ROW> resultStage = new ResultStage<>(dataSet, nextStageId++);
+        // 根据依赖构造所有ShuffleMapStage
+        createShuffleMapStage(resultStage);
+
+        // 执行ShuffleMapStage
+        for (Stage stage : stages) {
+            if (stage instanceof ShuffleMapStage) {
+                Integer[] dependencies = shuffleMapStageToDependencies.get(stage);
+                Stream.of(stage.getPartitions())
+                        .map(partition -> CompletableFuture.runAsync(
+                                () -> stage.compute(partition, TaskContext.of(stage.getStageId(), dependencies)))
+                        )
+                        .collect(Collectors.toList())
+                        .forEach(CompletableFuture::join);
+            }
+        }
+
+        // 执行ResultStage
+        Integer[] dependencies = shuffleMapStageToDependencies.get(resultStage);
+            return Stream.of(resultStage.getPartitions())
+                    .map(partition -> CompletableFuture.supplyAsync(
+                            () -> {
+                Iterator<ROW> iterator
+                        = resultStage.compute(partition, TaskContext.of(resultStage.getStageId(), dependencies));
                 return function.apply(iterator);
-            }, executors)).collect(Collectors.toList()).stream()
+            }))
+                    .collect(Collectors.toList())
+                    .stream()
                     .map(CompletableFuture::join)
                     .collect(Collectors.toList());
-        } finally {
-            executors.shutdown();
-        }
     }
 
-    private <ROW> ResultStage<ROW> runShuffleMapStage(DataSet<ROW> dataSet) {
-        List<DataSet<?>> shuffleMapOperators = new ArrayList<>();
-
-        for (DataSet<?> parent = dataSet; parent != null; parent = parent.getParent()) {
-            if (parent instanceof ShuffleMapOperator) {
-                shuffleMapOperators.add(parent);
+    private <ROW> void createShuffleMapStage(ResultStage<ROW> resultStage) {
+        Deque<DataSet<?>> dataSetQueue = new LinkedList<>();
+        Deque<ShuffleMapStage> stageQueue = new LinkedList<>();
+        Stage currentStage = resultStage;
+        DataSet<?> currentDataSet;
+        dataSetQueue.offer(resultStage.getFinalDataSet());
+        List<Integer> dependencies = new ArrayList<>();
+        while (!dataSetQueue.isEmpty()) {
+            currentDataSet = dataSetQueue.pop();
+            if (currentDataSet instanceof ShuffleMapOperator) {
+                shuffleMapStageToDependencies.put(currentStage, dependencies.toArray(new Integer[0]));
+                dependencies.clear();
+                currentStage = stageQueue.pop();
+            }
+            for (DataSet<?> dataSet : currentDataSet.getDependencies()) {
+                if (dataSet instanceof ShuffleMapOperator) {
+                    int stageId = nextStageId++;
+                    dependencies.add(stageId);
+                    stageQueue.offer(new ShuffleMapStage(dataSet, stageId));
+                }
+                dataSetQueue.push(dataSet);
             }
         }
-
-        List<ShuffleMapStage> stages = new ArrayList<>();
-        for (int stageId = 0; stageId < shuffleMapOperators.size(); stageId++) {
-            stages.add(new ShuffleMapStage(shuffleMapOperators.get(shuffleMapOperators.size() - stageId - 1), stageId));
-        }
-
-        for (ShuffleMapStage stage : stages) {
-            ExecutorService executors = Executors.newFixedThreadPool(dataSet.numPartitions());
-            try {
-                Stream.of(stage.getPartitions()).map(partition -> CompletableFuture.runAsync(() -> {
-                    stage.compute(partition);
-                }, executors)).collect(Collectors.toList()).forEach(CompletableFuture::join);
-            } finally {
-                executors.shutdown();
-            }
-        }
-
-        return new ResultStage<>(dataSet, stages.size());
+        shuffleMapStageToDependencies.putIfAbsent(currentStage, dependencies.toArray(new Integer[0]));
+        stages.addAll(shuffleMapStageToDependencies.keySet());
     }
 }
