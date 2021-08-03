@@ -1,6 +1,6 @@
 package com.github.pidan.core.function;
 
-public class HashPartitioner<KEY> extends Partitioner<KEY> {
+public class HashPartitioner extends Partitioner {
 
     private final int numPartitions;
 
@@ -14,7 +14,7 @@ public class HashPartitioner<KEY> extends Partitioner<KEY> {
     }
 
     @Override
-    public int getPartition(KEY key) {
+    public int getPartition(Object key) {
         return (key.hashCode() & Integer.MAX_VALUE) % numPartitions;
     }
 }

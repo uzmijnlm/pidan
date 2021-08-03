@@ -1,6 +1,7 @@
 package com.github.pidan.batch.api;
 
 import com.github.pidan.batch.environment.ExecutionEnvironment;
+import com.github.pidan.core.JoinType;
 import com.github.pidan.core.function.FlatMapFunction;
 import com.github.pidan.core.tuple.Tuple2;
 import org.junit.Assert;

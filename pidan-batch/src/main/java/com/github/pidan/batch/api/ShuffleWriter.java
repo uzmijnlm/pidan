@@ -15,9 +15,9 @@ public class ShuffleWriter<KEY, ROW> implements Closeable {
     private final int stageId;
     private final int mapId;
     private final KeySelector<ROW, KEY> keySelector;
-    private final Partitioner<KEY> partitioner;
+    private final Partitioner partitioner;
 
-    public ShuffleWriter(int stageId, int mapId, KeySelector<ROW, KEY> keySelector, Partitioner<KEY> partitioner) {
+    public ShuffleWriter(int stageId, int mapId, KeySelector<ROW, KEY> keySelector, Partitioner partitioner) {
         this.stageId = stageId;
         this.mapId = mapId;
         this.keySelector = keySelector;

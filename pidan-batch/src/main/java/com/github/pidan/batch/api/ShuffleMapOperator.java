@@ -12,9 +12,9 @@ import java.util.Iterator;
 public class ShuffleMapOperator<KEY, ROW> extends DataSet<ROW> {
     private final DataSet<ROW> parentDataSet;
     private final KeySelector<ROW, KEY> partitionKeySelector;
-    private final Partitioner<KEY> partitioner;
+    private final Partitioner partitioner;
 
-    public ShuffleMapOperator(DataSet<ROW> parentDataSet, KeySelector<ROW, KEY> partitionKeySelector, Partitioner<KEY> partitioner) {
+    public ShuffleMapOperator(DataSet<ROW> parentDataSet, KeySelector<ROW, KEY> partitionKeySelector, Partitioner partitioner) {
         super(parentDataSet);
         this.parentDataSet = parentDataSet;
         this.partitionKeySelector = partitionKeySelector;
@@ -42,7 +42,7 @@ public class ShuffleMapOperator<KEY, ROW> extends DataSet<ROW> {
         return Iterators.empty();
     }
 
-    public Partitioner<KEY> getPartitioner() {
+    public Partitioner getPartitioner() {
         return partitioner;
     }
 
