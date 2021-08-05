@@ -1,14 +1,13 @@
-package com.github.pidan.batch.api;
+package com.github.pidan.core.util;
 
+import com.github.pidan.core.JoinType;
 import com.github.pidan.core.function.KeySelector;
 import com.github.pidan.core.function.ReduceFunction;
 import com.github.pidan.core.tuple.Tuple2;
-import com.github.pidan.core.util.IteratorUtil;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 
@@ -105,8 +104,8 @@ public class IteratorUtilTest {
         KeySelector<Tuple2<Integer, String>, Integer> keySelector2 = value -> value.f0;
 
         Iterator<Tuple2<Tuple2<Integer, String>, Tuple2<Integer, String>>> resultIter
-                = IteratorUtil.sortMergeJoin(Comparator.comparingInt(o -> o),
-                list1.iterator(), list2.iterator(), keySelector1, keySelector2);
+                = IteratorUtil.sortMergeJoin(ComparatorUtil.COMPARATOR,
+                list1.iterator(), list2.iterator(), keySelector1, keySelector2, JoinType.INNER_JOIN);
 
         Tuple2<Tuple2<Integer, String>, Tuple2<Integer, String>> next1 = resultIter.next();
         Assert.assertEquals(Tuple2.of(Tuple2.of(1, "a"), Tuple2.of(1, "b")), next1);
@@ -132,13 +131,35 @@ public class IteratorUtilTest {
         KeySelector<Tuple2<Integer, String>, Integer> keySelector2 = value -> value.f0;
 
         Iterator<Tuple2<Tuple2<Integer, String>, Tuple2<Integer, String>>> resultIter
-                = IteratorUtil.sortMergeJoin(Comparator.comparingInt(o -> o),
-                list1.iterator(), list2.iterator(), keySelector1, keySelector2);
+                = IteratorUtil.sortMergeJoin(ComparatorUtil.COMPARATOR,
+                list1.iterator(), list2.iterator(), keySelector1, keySelector2, JoinType.INNER_JOIN);
 
         // key为1的数据没有join到数据
         Tuple2<Tuple2<Integer, String>, Tuple2<Integer, String>> next1 = resultIter.next();
         Assert.assertEquals(Tuple2.of(Tuple2.of(2, "c"), Tuple2.of(2, "d")), next1);
         // 仅迭代一次后就不再有数据
         Assert.assertFalse(resultIter.hasNext());
+    }
+
+    @Test
+    public void testSortIterator() {
+        // 构造key有序的列表
+        List<Tuple2<Integer, String>> list = new ArrayList<>();
+        list.add(Tuple2.of(2, "b"));
+        list.add(Tuple2.of(3, "c"));
+        list.add(Tuple2.of(1, "a"));
+        Iterator<Tuple2<Integer, String>> unSortedIter = list.iterator();
+
+        KeySelector<Tuple2<Integer, String>, Integer> keySelector = value -> value.f0;
+
+        Iterator<Tuple2<Integer, String>> sortedIter = IteratorUtil.sortIterator(unSortedIter, keySelector);
+        Tuple2<Integer, String> next1 = sortedIter.next();
+        Assert.assertEquals(Tuple2.of(1, "a"), next1);
+        Tuple2<Integer, String> next2 = sortedIter.next();
+        Assert.assertEquals(Tuple2.of(2, "b"), next2);
+        Tuple2<Integer, String> next3 = sortedIter.next();
+        Assert.assertEquals(Tuple2.of(3, "c"), next3);
+        // 不再有数据
+        Assert.assertFalse(sortedIter.hasNext());
     }
 }

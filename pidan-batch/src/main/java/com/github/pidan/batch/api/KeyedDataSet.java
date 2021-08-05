@@ -2,6 +2,7 @@ package com.github.pidan.batch.api;
 
 import com.github.pidan.core.function.*;
 import com.github.pidan.core.tuple.Tuple2;
+import com.github.pidan.core.util.TypeUtil;
 
 
 public class KeyedDataSet<KEY, ROW> {
@@ -22,16 +23,18 @@ public class KeyedDataSet<KEY, ROW> {
 
     public DataSet<ROW> reduce(ReduceFunction<ROW> reduceFunction) {
         ShuffleMapOperator<KEY, ROW> shuffleMapOperator = new ShuffleMapOperator<>(parentDataSet, keySelector, partitioner);
-        ShuffleOperator<KEY, ROW> shuffleOperator = new ShuffleOperator<>(shuffleMapOperator);
+        ShuffleOperator<KEY, ROW> shuffleOperator = new ShuffleOperator<>(shuffleMapOperator, keySelector);
         return new AggDataSet<>(shuffleOperator, keySelector, reduceFunction);
     }
 
     public DataSet<Tuple2<KEY, Integer>> count() {
+        KeySelector<Tuple2<KEY, Integer>, KEY> newKeySelector = value -> value.f0;
+        TypeUtil.extractKeyType(keySelector);
         ShuffleMapOperator<KEY, Tuple2<KEY, Integer>> shuffleMapOperator = new ShuffleMapOperator<>(
                 parentDataSet.map((MapFunction<ROW, Tuple2<KEY, Integer>>) input -> Tuple2.of(keySelector.getKey(input), 1)),
-                (KeySelector<Tuple2<KEY, Integer>, KEY>) value -> value.f0,
+                newKeySelector,
                 partitioner);
-        ShuffleOperator<KEY, Tuple2<KEY, Integer>> shuffleOperator = new ShuffleOperator<>(shuffleMapOperator);
+        ShuffleOperator<KEY, Tuple2<KEY, Integer>> shuffleOperator = new ShuffleOperator<>(shuffleMapOperator, newKeySelector);
         ReduceFunction<Tuple2<KEY, Integer>> reduceFunction = (input1, input2) -> Tuple2.of(input1.f0, input1.f1 + input2.f1);
         return new AggDataSet<>(shuffleOperator, (KeySelector<Tuple2<KEY, Integer>, KEY>) value -> value.f0, reduceFunction);
     }

@@ -8,6 +8,8 @@ import com.github.pidan.core.util.IteratorUtil;
 
 import java.util.Iterator;
 
+import static com.github.pidan.core.configuration.Constant.enableSortShuffle;
+
 public class AggDataSet<KEY, ROW> extends DataSet<ROW> {
     private final DataSet<ROW> parentDataSet;
     private final KeySelector<ROW, KEY> keySelector;
@@ -31,7 +33,11 @@ public class AggDataSet<KEY, ROW> extends DataSet<ROW> {
     @Override
     public Iterator<ROW> compute(Partition partition, TaskContext taskContext) {
         Iterator<ROW> iterator = parentDataSet.compute(partition, taskContext);
-        return IteratorUtil.reduce(iterator, keySelector, reduceFunction);
+        if (enableSortShuffle) {
+            return IteratorUtil.reduceSorted(iterator, keySelector, reduceFunction);
+        } else {
+            return IteratorUtil.reduce(iterator, keySelector, reduceFunction);
+        }
     }
 
     @Override

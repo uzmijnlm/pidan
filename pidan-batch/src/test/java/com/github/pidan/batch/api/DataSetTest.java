@@ -58,20 +58,12 @@ public class DataSetTest {
         }).map(word -> new Tuple2<>(word, 1));
         List<Tuple2<String, Integer>> result = tuples
                 .groupBy(x -> x.f0)
-                .reduce((x, y) ->
-                        Tuple2.of(x.f0, x.f1 + y.f1)
-                ).collect();
-        StringBuilder sb = new StringBuilder();
-        for (Tuple2<String, Integer> tuple2 : result) {
-            String word = tuple2.f0;
-            Integer count = tuple2.f1;
-            sb.append(word);
-            sb.append(",");
-            sb.append(count);
-            sb.append("\n");
-        }
-        String expectedString = "not,1\nor,1\nbe,2\nto,2\n";
-        Assert.assertEquals(sb.toString(), expectedString);
+                .reduce((x, y) -> Tuple2.of(x.f0, x.f1 + y.f1))
+                .collect();
+        Assert.assertTrue(result.contains(Tuple2.of("not", 1)));
+        Assert.assertTrue(result.contains(Tuple2.of("or", 1)));
+        Assert.assertTrue(result.contains(Tuple2.of("be", 2)));
+        Assert.assertTrue(result.contains(Tuple2.of("to", 2)));
     }
 
     @Test
@@ -87,17 +79,10 @@ public class DataSetTest {
                 .groupBy(x -> x.f0)
                 .count()
                 .collect();
-        StringBuilder sb = new StringBuilder();
-        for (Tuple2<String, Integer> tuple2 : result) {
-            String word = tuple2.f0;
-            Integer count = tuple2.f1;
-            sb.append(word);
-            sb.append(",");
-            sb.append(count);
-            sb.append("\n");
-        }
-        String expectedString = "not,1\nor,1\nbe,2\nto,2\n";
-        Assert.assertEquals(sb.toString(), expectedString);
+        Assert.assertTrue(result.contains(Tuple2.of("not", 1)));
+        Assert.assertTrue(result.contains(Tuple2.of("or", 1)));
+        Assert.assertTrue(result.contains(Tuple2.of("be", 2)));
+        Assert.assertTrue(result.contains(Tuple2.of("to", 2)));
     }
 
     @Test

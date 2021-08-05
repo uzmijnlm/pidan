@@ -12,6 +12,21 @@ import java.util.stream.Stream;
 
 public class IteratorUtil {
 
+    public static <ROW, KEY> Iterator<ROW> sortIterator(Iterator<ROW> iterator,
+                                                        KeySelector<ROW, KEY> keySelector) {
+        List<ROW> list = new ArrayList<>();
+        while (iterator.hasNext()) {
+            ROW record = iterator.next();
+            list.add(record);
+        }
+        list.sort((o1, o2) -> {
+            KEY key1 = keySelector.getKey(o1);
+            KEY key2 = keySelector.getKey(o2);
+            return ComparatorUtil.COMPARATOR.compare(key1, key2);
+        });
+        return list.iterator();
+    }
+
     public static <ROW, KEY> Iterator<ROW> reduce(Iterator<ROW> iterator,
                                                   KeySelector<ROW, KEY> keySelector,
                                                   ReduceFunction<ROW> reduceFunction) {
@@ -108,15 +123,15 @@ public class IteratorUtil {
         return values;
     }
 
-    public static <I1, I2> Iterator<Tuple2<I1, I2>> cartesian(Iterable<I1> leftIterable,
-                                                              Iterable<I2> rightIterable,
-                                                              JoinType joinType) {
+    private static <I1, I2> Iterator<Tuple2<I1, I2>> cartesian(Iterable<I1> leftIterable,
+                                                               Iterable<I2> rightIterable,
+                                                               JoinType joinType) {
         Collection<I2> collection = (Collection<I2>) rightIterable;
         Function<I1, Stream<Tuple2<I1, I2>>> function;
         switch (joinType) {
             case INNER_JOIN:
                 function = left -> collection.stream().map(right -> Tuple2.of(left, right));
-                break;
+                return ((Collection<I1>) leftIterable).stream().flatMap(function).iterator();
             case LEFT_JOIN:
                 function = left -> {
                     if (collection.isEmpty()) {
@@ -125,42 +140,45 @@ public class IteratorUtil {
                         return collection.stream().map(right -> Tuple2.of(left, right));
                     }
                 };
-                break;
+                return ((Collection<I1>) leftIterable).stream().flatMap(function).iterator();
             case RIGHT_JOIN:
             case FULL_JOIN:
+
             default:
                 throw new RuntimeException("Unsupported join type");
         }
-        return ((Collection<I1>) leftIterable).stream().flatMap(function).iterator();
     }
 
     public static <I1, I2, KEY> Iterator<Tuple2<I1, I2>> sortMergeJoin(
-            Comparator<KEY> comparator,
+            Comparator<Object> comparator,
             Iterator<I1> leftIterator,
             Iterator<I2> rightIterator,
             KeySelector<I1, KEY> keySelector1,
-            KeySelector<I2, KEY> keySelector2)
-    {
-        return new Iterator<Tuple2<I1, I2>>()
-        {
+            KeySelector<I2, KEY> keySelector2,
+            JoinType joinType) {
+        return new Iterator<Tuple2<I1, I2>>() {
             private I1 leftNode = leftIterator.next();
             private I2 rightNode = null;
+            private I2 tmpRightNode = null;
+            private boolean leftJoin;
 
             private final List<I1> leftSameKeys = new ArrayList<>();
             private final ResetIterator<I1> leftSameIterator = wrap(leftSameKeys);
             private final Iterator<Tuple2<I1, I2>> child = map(leftSameIterator, x -> Tuple2.of(x, rightNode));
 
             @Override
-            public boolean hasNext()
-            {
+            public boolean hasNext() {
                 if (child.hasNext()) {
                     return true;
                 }
                 if (!rightIterator.hasNext()) {
                     return false;
                 }
-                this.rightNode = rightIterator.next();
 
+                // 根据不同的JoinType迭代到下一个元素
+                iterateToNextNode();
+
+                // 新的rightNode的key与上一个相同，因此可以直接利用先前的leftSameIterator重新迭代
                 if (!leftSameKeys.isEmpty() && Objects.equals(keySelector1.getKey(leftSameKeys.get(0)), keySelector2.getKey(rightNode))) {
                     leftSameIterator.reset();
                     return true;
@@ -168,38 +186,83 @@ public class IteratorUtil {
                 while (true) {
                     int than = comparator.compare(keySelector1.getKey(leftNode), keySelector2.getKey(rightNode));
                     if (than == 0) {
-                        leftSameKeys.clear();
-                        do {
-                            leftSameKeys.add(leftNode);
-                            if (leftIterator.hasNext()) {
-                                leftNode = leftIterator.next();
-                            }
-                            else {
-                                break;
-                            }
-                        }
-                        while (Objects.equals(keySelector1.getKey(leftNode), keySelector2.getKey(rightNode)));
-                        leftSameIterator.reset();
-                        return true;
-                    }
-                    else if (than > 0) {
+                        return doWhenEqual();
+                    } else if (than > 0) {
                         if (!rightIterator.hasNext()) {
                             return false;
                         }
                         this.rightNode = rightIterator.next();
-                    }
-                    else {
+                    } else {
                         if (!leftIterator.hasNext()) {
                             return false;
+                        }
+                        if (doWhenRightLarger()) {
+                            return true;
                         }
                         this.leftNode = leftIterator.next();
                     }
                 }
             }
 
+            private boolean doWhenRightLarger() {
+                switch (joinType) {
+                    case INNER_JOIN:
+                        break;
+                    case LEFT_JOIN:
+                        // 之前右侧迭代器没有与之相同的key出现过
+                        if (leftSameKeys.isEmpty()) {
+                            tmpRightNode = rightNode;
+                            rightNode = null;
+                            leftSameKeys.add(leftNode);
+                            this.leftNode = leftIterator.next();
+                            leftJoin = true;
+                            return true;
+                        }
+                        return false;
+                    case RIGHT_JOIN:
+                    case FULL_JOIN:
+                    default:
+                        throw new RuntimeException("Unsupported join type");
+                }
+                return false;
+            }
+
+            private boolean doWhenEqual() {
+                leftSameKeys.clear();
+                do {
+                    leftSameKeys.add(leftNode);
+                    if (leftIterator.hasNext()) {
+                        leftNode = leftIterator.next();
+                    } else {
+                        break;
+                    }
+                } while (Objects.equals(keySelector1.getKey(leftNode), keySelector2.getKey(rightNode)));
+                leftSameIterator.reset();
+                return true;
+            }
+
+            private void iterateToNextNode() {
+                switch (joinType) {
+                    case INNER_JOIN:
+                        rightNode = rightIterator.next();
+                        break;
+                    case LEFT_JOIN:
+                        if (leftJoin) {
+                            rightNode = tmpRightNode;
+                            leftJoin = false;
+                        } else {
+                            rightNode = rightIterator.next();
+                        }
+                        break;
+                    case RIGHT_JOIN:
+                    case FULL_JOIN:
+                    default:
+                        throw new RuntimeException("Unsupported join type");
+                }
+            }
+
             @Override
-            public Tuple2<I1, I2> next()
-            {
+            public Tuple2<I1, I2> next() {
                 if (!hasNext()) {
                     throw new NoSuchElementException();
                 }
@@ -208,27 +271,21 @@ public class IteratorUtil {
         };
     }
 
-    interface ResetIterator<E>
-            extends Iterator<E>
-    {
+    interface ResetIterator<E> extends Iterator<E> {
         void reset();
     }
 
-    public static <E> ResetIterator<E> wrap(List<E> values)
-    {
-        return new ResetIterator<E>()
-        {
+    public static <E> ResetIterator<E> wrap(List<E> values) {
+        return new ResetIterator<E>() {
             private int index = 0;
 
             @Override
-            public boolean hasNext()
-            {
+            public boolean hasNext() {
                 return index < values.size();
             }
 
             @Override
-            public E next()
-            {
+            public E next() {
                 if (!this.hasNext()) {
                     throw new NoSuchElementException();
                 }
@@ -236,26 +293,21 @@ public class IteratorUtil {
             }
 
             @Override
-            public void reset()
-            {
+            public void reset() {
                 this.index = 0;
             }
         };
     }
 
-    public static <I1, I2> Iterator<I2> map(Iterator<I1> iterator, Function<I1, I2> function)
-    {
-        return new Iterator<I2>()
-        {
+    public static <I1, I2> Iterator<I2> map(Iterator<I1> iterator, Function<I1, I2> function) {
+        return new Iterator<I2>() {
             @Override
-            public boolean hasNext()
-            {
+            public boolean hasNext() {
                 return iterator.hasNext();
             }
 
             @Override
-            public I2 next()
-            {
+            public I2 next() {
                 return function.apply(iterator.next());
             }
         };

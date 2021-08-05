@@ -6,10 +6,13 @@ import com.github.pidan.core.TaskContext;
 import com.github.pidan.core.function.HashPartitioner;
 import com.github.pidan.core.function.KeySelector;
 import com.github.pidan.core.tuple.Tuple2;
+import com.github.pidan.core.util.ComparatorUtil;
 import com.github.pidan.core.util.IteratorUtil;
 
 import java.util.Iterator;
 import java.util.stream.IntStream;
+
+import static com.github.pidan.core.configuration.Constant.enableSortShuffle;
 
 public class JoinedDataSet<I1, I2> {
     protected final DataSet<I1> input1;
@@ -83,7 +86,13 @@ public class JoinedDataSet<I1, I2> {
             int index = partition.getIndex();
             Iterator<I1> leftIterator = (Iterator<I1>) new ShuffleReader(index, deps[0]).read();
             Iterator<I2> rightIterator = (Iterator<I2>) new ShuffleReader(index, deps[1]).read();
-            return IteratorUtil.join(leftIterator, rightIterator, keySelector1, keySelector2, joinType);
+            if (enableSortShuffle) {
+                Iterator<I1> sortedLeftIter = IteratorUtil.sortIterator(leftIterator, keySelector1);
+                Iterator<I2> sortedRightIter = IteratorUtil.sortIterator(rightIterator, keySelector2);
+                return IteratorUtil.sortMergeJoin(ComparatorUtil.COMPARATOR, sortedLeftIter, sortedRightIter, keySelector1, keySelector2, joinType);
+            } else {
+                return IteratorUtil.join(leftIterator, rightIterator, keySelector1, keySelector2, joinType);
+            }
         }
     }
 }
