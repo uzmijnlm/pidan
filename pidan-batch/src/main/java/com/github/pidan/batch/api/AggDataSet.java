@@ -1,9 +1,9 @@
 package com.github.pidan.batch.api;
 
-import com.github.pidan.core.Partition;
 import com.github.pidan.core.TaskContext;
 import com.github.pidan.core.function.KeySelector;
 import com.github.pidan.core.function.ReduceFunction;
+import com.github.pidan.core.partition.Partition;
 import com.github.pidan.core.util.IteratorUtil;
 
 import java.util.Iterator;
@@ -40,8 +40,4 @@ public class AggDataSet<KEY, ROW> extends DataSet<ROW> {
         }
     }
 
-    @Override
-    public DataSet<?> getParent() {
-        return parentDataSet;
-    }
 }

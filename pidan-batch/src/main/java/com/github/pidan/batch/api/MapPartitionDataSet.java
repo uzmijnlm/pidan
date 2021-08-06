@@ -1,8 +1,8 @@
 package com.github.pidan.batch.api;
 
-import com.github.pidan.core.Partition;
 import com.github.pidan.core.TaskContext;
 import com.github.pidan.core.function.MapFunction;
+import com.github.pidan.core.partition.Partition;
 import com.google.common.collect.Iterators;
 
 import java.util.Iterator;
@@ -29,8 +29,4 @@ public class MapPartitionDataSet<IN, OUT> extends DataSet<OUT> {
         return Iterators.transform(parentDataSet.compute(partition, taskContext), mapFunction::map);
     }
 
-    @Override
-    public DataSet<?> getParent() {
-        return parentDataSet;
-    }
 }

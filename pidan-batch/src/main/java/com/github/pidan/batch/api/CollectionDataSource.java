@@ -1,8 +1,9 @@
 package com.github.pidan.batch.api;
 
 import com.github.pidan.batch.environment.ExecutionEnvironment;
-import com.github.pidan.core.Partition;
 import com.github.pidan.core.TaskContext;
+import com.github.pidan.core.partition.ParallelCollectionPartition;
+import com.github.pidan.core.partition.Partition;
 import com.github.pidan.core.tuple.Tuple2;
 import com.google.common.collect.ImmutableList;
 
@@ -49,19 +50,5 @@ public class CollectionDataSource<E> extends DataSet<E> {
     public Iterator<E> compute(Partition partition, TaskContext taskContext) {
         ParallelCollectionPartition<E> collectionPartition = (ParallelCollectionPartition<E>) partition;
         return collectionPartition.getCollection().iterator();
-    }
-
-    private static class ParallelCollectionPartition<ROW>
-            extends Partition {
-        private final Collection<ROW> collection;
-
-        public ParallelCollectionPartition(int index, Collection<ROW> collection) {
-            super(index);
-            this.collection = collection;
-        }
-
-        public Collection<ROW> getCollection() {
-            return collection;
-        }
     }
 }

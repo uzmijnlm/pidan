@@ -1,10 +1,12 @@
 package com.github.pidan.batch.api;
 
 import com.github.pidan.core.JoinType;
-import com.github.pidan.core.Partition;
 import com.github.pidan.core.TaskContext;
 import com.github.pidan.core.function.HashPartitioner;
 import com.github.pidan.core.function.KeySelector;
+import com.github.pidan.core.function.Partitioner;
+import com.github.pidan.core.partition.Partition;
+import com.github.pidan.core.partition.ShuffledPartition;
 import com.github.pidan.core.tuple.Tuple2;
 import com.github.pidan.core.util.ComparatorUtil;
 import com.github.pidan.core.util.IteratorUtil;
@@ -56,28 +58,32 @@ public class JoinedDataSet<I1, I2> {
                     shuffleMapOperator1,
                     shuffleMapOperator2,
                     keySelector1,
-                    keySelector2);
+                    keySelector2,
+                    partitioner);
         }
     }
 
     public class EqualTo<KEY> extends DataSet<Tuple2<I1, I2>> {
         private final KeySelector<I1, KEY> keySelector1;
         private final KeySelector<I2, KEY> keySelector2;
+        private final Partitioner partitioner;
 
         protected EqualTo(DataSet<I1> input1,
                           DataSet<I2> input2,
                           KeySelector<I1, KEY> keySelector1,
-                          KeySelector<I2, KEY> keySelector2) {
+                          KeySelector<I2, KEY> keySelector2,
+                          Partitioner partitioner) {
             super(input1, input2);
             this.keySelector1 = keySelector1;
             this.keySelector2 = keySelector2;
+            this.partitioner = partitioner;
         }
 
 
         @Override
         public Partition[] getPartitions() {
-            return IntStream.range(0, getDependencies().get(0).numPartitions())
-                    .mapToObj(Partition::new).toArray(Partition[]::new);
+            return IntStream.range(0, partitioner.numPartitions())
+                    .mapToObj(ShuffledPartition::new).toArray(Partition[]::new);
         }
 
         @Override
@@ -93,6 +99,11 @@ public class JoinedDataSet<I1, I2> {
             } else {
                 return IteratorUtil.join(leftIterator, rightIterator, keySelector1, keySelector2, joinType);
             }
+        }
+
+        @Override
+        public int numPartitions() {
+            return partitioner.numPartitions();
         }
     }
 }

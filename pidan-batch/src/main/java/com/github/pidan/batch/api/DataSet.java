@@ -2,9 +2,9 @@ package com.github.pidan.batch.api;
 
 import com.github.pidan.batch.environment.ExecutionEnvironment;
 import com.github.pidan.core.JoinType;
-import com.github.pidan.core.Partition;
 import com.github.pidan.core.TaskContext;
 import com.github.pidan.core.function.*;
+import com.github.pidan.core.partition.Partition;
 import com.google.common.collect.ImmutableList;
 
 import java.util.Arrays;
@@ -77,10 +77,6 @@ public abstract class DataSet<ROW> {
             }
             return null;
         });
-    }
-
-    public DataSet<?> getParent() {
-        return null;
     }
 
     public <I2> JoinedDataSet<ROW, I2> join(DataSet<I2> dataSet2) {

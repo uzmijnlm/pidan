@@ -86,6 +86,15 @@ public class DataSetTest {
     }
 
     @Test
+    public void testFromCollection() {
+        DataSet<String> dataSet = env.fromCollection(Arrays.asList("1", "2", "3"));
+
+        DataSet<Integer> mapDataSet = dataSet.map(Integer::parseInt);
+        List<Integer> mapList = mapDataSet.collect();
+        Assert.assertEquals(Arrays.asList(1, 2, 3), mapList);
+    }
+
+    @Test
     public void testFromCollectionParallel() {
         DataSet<String> dataSet = env.fromCollection(Arrays.asList("1", "2", "3"), 2);
 

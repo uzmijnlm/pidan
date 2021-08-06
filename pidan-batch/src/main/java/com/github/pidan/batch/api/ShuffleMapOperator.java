@@ -1,9 +1,9 @@
 package com.github.pidan.batch.api;
 
-import com.github.pidan.core.Partition;
 import com.github.pidan.core.TaskContext;
 import com.github.pidan.core.function.KeySelector;
 import com.github.pidan.core.function.Partitioner;
+import com.github.pidan.core.partition.Partition;
 import com.sun.xml.internal.xsom.impl.scd.Iterators;
 
 import java.io.IOException;
@@ -42,12 +42,4 @@ public class ShuffleMapOperator<KEY, ROW> extends DataSet<ROW> {
         return Iterators.empty();
     }
 
-    public Partitioner getPartitioner() {
-        return partitioner;
-    }
-
-    @Override
-    public DataSet<?> getParent() {
-        return parentDataSet;
-    }
 }

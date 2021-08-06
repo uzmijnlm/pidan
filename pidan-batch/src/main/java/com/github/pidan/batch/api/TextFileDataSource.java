@@ -1,8 +1,9 @@
 package com.github.pidan.batch.api;
 
 import com.github.pidan.batch.environment.ExecutionEnvironment;
-import com.github.pidan.core.Partition;
 import com.github.pidan.core.TaskContext;
+import com.github.pidan.core.partition.Partition;
+import com.github.pidan.core.partition.TextFilePartition;
 
 import java.io.File;
 import java.io.IOException;
@@ -28,19 +29,9 @@ public class TextFileDataSource extends DataSet<String> {
     public Iterator<String> compute(Partition partition, TaskContext taskContext) {
         TextFilePartition textFilePartition = (TextFilePartition) partition;
         try {
-            return Files.readAllLines(Paths.get(textFilePartition.file.toURI())).iterator();
+            return Files.readAllLines(Paths.get(textFilePartition.getFile().toURI())).iterator();
         } catch (IOException e) {
             throw new RuntimeException("Read file error");
-        }
-    }
-
-
-    private static class TextFilePartition extends Partition {
-        private final File file;
-
-        public TextFilePartition(int index, File file) {
-            super(index);
-            this.file = file;
         }
     }
 }

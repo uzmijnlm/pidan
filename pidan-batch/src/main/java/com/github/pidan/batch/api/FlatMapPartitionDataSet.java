@@ -1,9 +1,9 @@
 package com.github.pidan.batch.api;
 
-import com.github.pidan.core.Partition;
 import com.github.pidan.core.TaskContext;
 import com.github.pidan.core.function.FlatMapFunction;
 import com.github.pidan.core.function.MapFunction;
+import com.github.pidan.core.partition.Partition;
 import com.google.common.collect.Iterators;
 
 import java.util.ArrayList;
@@ -46,8 +46,4 @@ public class FlatMapPartitionDataSet<IN, OUT> extends DataSet<OUT> {
         }));
     }
 
-    @Override
-    public DataSet<?> getParent() {
-        return parentDataSet;
-    }
 }
