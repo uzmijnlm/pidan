@@ -8,7 +8,7 @@ public class WordCount {
 
     public static void main(String[] args) {
         // 1.获取执行环境。
-        ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+        ExecutionEnvironment env = ExecutionEnvironment.getLocalExecutionEnvironment();
 
         // 2.定义输入。
         DataSet<String> dataSet = WordCountData.getDefaultTextLineDataSet(env);

@@ -13,8 +13,12 @@ import java.util.function.Function;
 
 public interface ExecutionEnvironment {
 
-    static ExecutionEnvironment getExecutionEnvironment() {
+    static ExecutionEnvironment getLocalExecutionEnvironment() {
         return new LocalExecutionEnvironment();
+    }
+
+    static ExecutionEnvironment getRemoteExecutionEnvironment() {
+        return new RemoteExecutionEnvironment();
     }
 
     default <X> CollectionDataSource<X> fromElements(X... data) {
@@ -29,9 +33,10 @@ public interface ExecutionEnvironment {
         return new CollectionDataSource<>(this, data, parallelism);
     }
 
-    <ROW, OUT> List<OUT> runJob(DataSet<ROW> dataSet, Function<Iterator<ROW>, OUT> foreach);
-
     default TextFileDataSource textFile(String path) {
         return new TextFileDataSource(this, path);
     }
+
+    <ROW, OUT> List<OUT> runJob(DataSet<ROW> dataSet, Function<Iterator<ROW>, OUT> foreach);
+
 }

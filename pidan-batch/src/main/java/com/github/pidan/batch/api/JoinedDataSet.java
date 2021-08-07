@@ -1,5 +1,6 @@
 package com.github.pidan.batch.api;
 
+import com.github.pidan.batch.shuffle.ShuffleReader;
 import com.github.pidan.core.JoinType;
 import com.github.pidan.core.TaskContext;
 import com.github.pidan.core.function.HashPartitioner;
@@ -11,12 +12,13 @@ import com.github.pidan.core.tuple.Tuple2;
 import com.github.pidan.core.util.ComparatorUtil;
 import com.github.pidan.core.util.IteratorUtil;
 
+import java.io.Serializable;
 import java.util.Iterator;
 import java.util.stream.IntStream;
 
 import static com.github.pidan.core.configuration.Constant.enableSortShuffle;
 
-public class JoinedDataSet<I1, I2> {
+public class JoinedDataSet<I1, I2> implements Serializable {
     protected final DataSet<I1> input1;
     protected final DataSet<I2> input2;
 

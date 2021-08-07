@@ -1,5 +1,6 @@
 package com.github.pidan.batch.api;
 
+import com.github.pidan.batch.shuffle.ShuffleWriter;
 import com.github.pidan.core.TaskContext;
 import com.github.pidan.core.function.KeySelector;
 import com.github.pidan.core.function.Partitioner;

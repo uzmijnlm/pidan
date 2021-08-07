@@ -17,7 +17,7 @@ import static com.github.pidan.core.configuration.Constant.SHUFFLE_DATA_DIRECTOR
 
 public class DataSetTest {
 
-    private final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+    private final ExecutionEnvironment env = ExecutionEnvironment.getLocalExecutionEnvironment();
 
     @Before
     public void setup() {

@@ -1,4 +1,4 @@
-package com.github.pidan.batch.api;
+package com.github.pidan.batch.shuffle;
 
 import com.github.pidan.core.function.KeySelector;
 import com.github.pidan.core.function.Partitioner;
@@ -11,7 +11,7 @@ import java.util.Map;
 import static com.github.pidan.core.configuration.Constant.SHUFFLE_DATA_DIRECTORY;
 import static com.github.pidan.core.configuration.Constant.SHUFFLE_FILE_PREFIX;
 
-public class ShuffleWriter<KEY, ROW> implements Closeable {
+public class ShuffleWriter<KEY, ROW> implements Closeable, Serializable {
     private final int stageId;
     private final int mapId;
     private final KeySelector<ROW, KEY> keySelector;

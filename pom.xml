@@ -12,7 +12,6 @@
     <modules>
         <module>pidan-core</module>
         <module>pidan-example</module>
-        <module>pidan-runtime</module>
         <module>pidan-batch</module>
     </modules>
 
@@ -31,6 +30,11 @@
             <groupId>net.jodah</groupId>
             <artifactId>typetools</artifactId>
             <version>0.6.3</version>
+        </dependency>
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-all</artifactId>
+            <version>4.1.58.Final</version>
         </dependency>
 
         <dependency>

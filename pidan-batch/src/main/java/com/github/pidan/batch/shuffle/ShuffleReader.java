@@ -1,4 +1,4 @@
-package com.github.pidan.batch.api;
+package com.github.pidan.batch.shuffle;
 
 import com.google.common.collect.Iterators;
 
@@ -11,7 +11,7 @@ import java.util.stream.Stream;
 import static com.github.pidan.core.configuration.Constant.SHUFFLE_DATA_DIRECTORY;
 import static com.github.pidan.core.configuration.Constant.SHUFFLE_FILE_PREFIX;
 
-public class ShuffleReader {
+public class ShuffleReader implements Serializable {
     private final int reduceId;
     private final int stageId;
 

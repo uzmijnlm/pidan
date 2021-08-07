@@ -4,8 +4,10 @@ import com.github.pidan.core.function.*;
 import com.github.pidan.core.tuple.Tuple2;
 import com.github.pidan.core.util.TypeUtil;
 
+import java.io.Serializable;
 
-public class KeyedDataSet<KEY, ROW> {
+
+public class KeyedDataSet<KEY, ROW> implements Serializable {
 
     private final DataSet<ROW> parentDataSet;
     private final KeySelector<ROW, KEY> keySelector;

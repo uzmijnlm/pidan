@@ -7,13 +7,14 @@ import com.github.pidan.core.function.*;
 import com.github.pidan.core.partition.Partition;
 import com.google.common.collect.ImmutableList;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public abstract class DataSet<ROW> {
+public abstract class DataSet<ROW> implements Serializable {
 
     protected final ExecutionEnvironment env;
     protected final DataSet<?>[] dataSets;
