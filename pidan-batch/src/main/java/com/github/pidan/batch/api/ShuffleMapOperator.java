@@ -1,7 +1,7 @@
 package com.github.pidan.batch.api;
 
+import com.github.pidan.batch.runtime.TaskContext;
 import com.github.pidan.batch.shuffle.ShuffleWriter;
-import com.github.pidan.core.TaskContext;
 import com.github.pidan.core.function.KeySelector;
 import com.github.pidan.core.function.Partitioner;
 import com.github.pidan.core.partition.Partition;
@@ -12,13 +12,13 @@ import java.util.Iterator;
 
 public class ShuffleMapOperator<KEY, ROW> extends DataSet<ROW> {
     private final DataSet<ROW> parentDataSet;
-    private final KeySelector<ROW, KEY> partitionKeySelector;
+    private final KeySelector<ROW, KEY> keySelector;
     private final Partitioner partitioner;
 
-    public ShuffleMapOperator(DataSet<ROW> parentDataSet, KeySelector<ROW, KEY> partitionKeySelector, Partitioner partitioner) {
+    public ShuffleMapOperator(DataSet<ROW> parentDataSet, KeySelector<ROW, KEY> keySelector, Partitioner partitioner) {
         super(parentDataSet);
         this.parentDataSet = parentDataSet;
-        this.partitionKeySelector = partitionKeySelector;
+        this.keySelector = keySelector;
         this.partitioner = partitioner;
     }
 
@@ -32,7 +32,7 @@ public class ShuffleMapOperator<KEY, ROW> extends DataSet<ROW> {
         try (ShuffleWriter<KEY, ROW> shuffleWriter = new ShuffleWriter<>(
                 taskContext.getStageId(),
                 partition.getIndex(),
-                partitionKeySelector,
+                keySelector,
                 partitioner)) {
 
             Iterator<ROW> iterator = parentDataSet.compute(partition, taskContext);

@@ -1,7 +1,7 @@
 package com.github.pidan.batch.api;
 
-import com.github.pidan.batch.shuffle.ShuffleReader;
-import com.github.pidan.core.TaskContext;
+import com.github.pidan.batch.runtime.TaskContext;
+import com.github.pidan.batch.shuffle.ShuffleClient;
 import com.github.pidan.core.function.KeySelector;
 import com.github.pidan.core.function.Partitioner;
 import com.github.pidan.core.partition.Partition;
@@ -38,8 +38,8 @@ public class ShuffleOperator<KEY, ROW> extends DataSet<ROW> {
     public Iterator<ROW> compute(Partition partition, TaskContext taskContext) {
         int index = partition.getIndex();
         int[] dependencies = taskContext.getDependStages();
-        ShuffleReader shuffleReader = new ShuffleReader(index, dependencies[0]);
-        Iterator<ROW> iterator = (Iterator<ROW>) shuffleReader.read();
+        ShuffleClient shuffleClient = taskContext.getShuffleClient();
+        Iterator<ROW> iterator = (Iterator<ROW>) shuffleClient.read(index, dependencies[0]);
         if (enableSortShuffle) {
             return IteratorUtil.sortIterator(iterator, keySelector);
         } else {

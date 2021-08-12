@@ -4,12 +4,13 @@ package com.github.pidan.batch.environment;
 import com.github.pidan.batch.api.CollectionDataSource;
 import com.github.pidan.batch.api.DataSet;
 import com.github.pidan.batch.api.TextFileDataSource;
+import com.github.pidan.core.function.MapFunction;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
-import java.util.function.Function;
 
 public interface ExecutionEnvironment {
 
@@ -17,8 +18,8 @@ public interface ExecutionEnvironment {
         return new LocalExecutionEnvironment();
     }
 
-    static ExecutionEnvironment getRemoteExecutionEnvironment() {
-        return new RemoteExecutionEnvironment();
+    static ExecutionEnvironment getPseudoRemoteExecutionEnvironment() {
+        return new PseudoRemoteExecutionEnvironment();
     }
 
     default <X> CollectionDataSource<X> fromElements(X... data) {
@@ -37,6 +38,14 @@ public interface ExecutionEnvironment {
         return new TextFileDataSource(this, path);
     }
 
-    <ROW, OUT> List<OUT> runJob(DataSet<ROW> dataSet, Function<Iterator<ROW>, OUT> foreach);
+    <ROW, OUT> List<OUT> runJob(DataSet<ROW> dataSet, MapFunction<Iterator<ROW>, OUT> foreach);
+
+    default void stop() {
+
+    }
+
+    default void stopForcibly() {
+
+    }
 
 }

@@ -2,14 +2,15 @@ package com.github.pidan.batch.environment;
 
 import com.github.pidan.batch.api.DataSet;
 import com.github.pidan.batch.api.ShuffleMapOperator;
-import com.github.pidan.batch.shuffle.ResultStage;
-import com.github.pidan.batch.shuffle.ShuffleMapStage;
-import com.github.pidan.batch.shuffle.Stage;
-import com.github.pidan.core.TaskContext;
+import com.github.pidan.batch.runtime.ResultTask;
+import com.github.pidan.batch.runtime.ShuffleMapTask;
+import com.github.pidan.batch.runtime.Task;
+import com.github.pidan.batch.runtime.TaskContext;
+import com.github.pidan.batch.shuffle.*;
+import com.github.pidan.core.function.MapFunction;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -25,19 +26,29 @@ public class LocalExecutionEnvironment implements ExecutionEnvironment {
     private final Map<Stage, Integer[]> shuffleMapStageToDependencies = new HashMap<>();
 
     @Override
-    public <ROW, OUT> List<OUT> runJob(DataSet<ROW> dataSet, Function<Iterator<ROW>, OUT> function) {
+    public <ROW, OUT> List<OUT> runJob(DataSet<ROW> dataSet, MapFunction<Iterator<ROW>, OUT> function) {
         // 构造ResultStage
         ResultStage<ROW> resultStage = new ResultStage<>(dataSet, nextStageId++);
         // 根据依赖构造所有ShuffleMapStage
         createShuffleMapStage(resultStage);
 
+        ShuffleClient shuffleClient = new LocalShuffleClient();
         // 执行ShuffleMapStage
         for (Stage stage : stages) {
             if (stage instanceof ShuffleMapStage) {
                 Integer[] dependencies = shuffleMapStageToDependencies.get(stage);
                 Stream.of(stage.getPartitions())
                         .map(partition -> CompletableFuture.runAsync(
-                                () -> stage.compute(partition, TaskContext.of(stage.getStageId(), dependencies)))
+                                () -> {
+                                    Task<Integer> task = new ShuffleMapTask(
+                                            stage.getStageId(),
+                                            partition,
+                                            stage.getFinalDataSet(),
+                                            Collections.emptyMap(),
+                                            dependencies);
+                                    TaskContext taskContext = TaskContext.of(stage.getStageId(), dependencies, shuffleClient);
+                                    task.runTask(taskContext);
+                                })
                         )
                         .collect(Collectors.toList())
                         .forEach(CompletableFuture::join);
@@ -46,17 +57,23 @@ public class LocalExecutionEnvironment implements ExecutionEnvironment {
 
         // 执行ResultStage
         Integer[] dependencies = shuffleMapStageToDependencies.get(resultStage);
-            return Stream.of(resultStage.getPartitions())
-                    .map(partition -> CompletableFuture.supplyAsync(
-                            () -> {
-                Iterator<ROW> iterator
-                        = resultStage.compute(partition, TaskContext.of(resultStage.getStageId(), dependencies));
-                return function.apply(iterator);
-            }))
-                    .collect(Collectors.toList())
-                    .stream()
-                    .map(CompletableFuture::join)
-                    .collect(Collectors.toList());
+        return Stream.of(resultStage.getPartitions())
+                .map(partition -> CompletableFuture.supplyAsync(
+                        () -> {
+                            Task<OUT> task = new ResultTask<>(
+                                    resultStage.getStageId(),
+                                    partition,
+                                    function,
+                                    (DataSet<ROW>) resultStage.getFinalDataSet(),
+                                    Collections.emptyMap(),
+                                    dependencies);
+                            TaskContext taskContext = TaskContext.of(resultStage.getStageId(), dependencies, shuffleClient);
+                            return task.runTask(taskContext);
+                        }))
+                .collect(Collectors.toList())
+                .stream()
+                .map(CompletableFuture::join)
+                .collect(Collectors.toList());
     }
 
     private <ROW> void createShuffleMapStage(ResultStage<ROW> resultStage) {

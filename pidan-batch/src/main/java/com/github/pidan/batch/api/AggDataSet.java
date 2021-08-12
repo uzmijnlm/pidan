@@ -1,6 +1,6 @@
 package com.github.pidan.batch.api;
 
-import com.github.pidan.core.TaskContext;
+import com.github.pidan.batch.runtime.TaskContext;
 import com.github.pidan.core.function.KeySelector;
 import com.github.pidan.core.function.ReduceFunction;
 import com.github.pidan.core.partition.Partition;

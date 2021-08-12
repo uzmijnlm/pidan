@@ -4,9 +4,7 @@ import com.github.pidan.core.function.KeySelector;
 import com.github.pidan.core.function.Partitioner;
 
 import java.io.*;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 
 import static com.github.pidan.core.configuration.Constant.SHUFFLE_DATA_DIRECTORY;
 import static com.github.pidan.core.configuration.Constant.SHUFFLE_FILE_PREFIX;
@@ -26,12 +24,14 @@ public class ShuffleWriter<KEY, ROW> implements Closeable, Serializable {
 
 
     @Override
-    public void close() throws IOException {
+    public void close() {
 
     }
 
     public void write(Iterator<ROW> iterator) throws IOException {
         Map<Integer, DataOutputStream> outputStreamMap = new HashMap<>();
+        Map<Integer, List<byte[]>> partitionToByte = new HashMap<>();
+        Map<Integer, Integer> partitionToTotalSize = new HashMap<>();
         try {
             while (iterator.hasNext()) {
                 ROW record = iterator.next();
@@ -48,15 +48,27 @@ public class ShuffleWriter<KEY, ROW> implements Closeable, Serializable {
                     }
                     dataOutputStream = new DataOutputStream(new FileOutputStream(getDataFile(stageId, mapId, partition), false));
                     outputStreamMap.put(partition, dataOutputStream);
+                    partitionToByte.put(partition, new ArrayList<>());
+                    partitionToTotalSize.put(partition, 0);
                 }
 
                 byte[] bytes = serialize(record);
-                dataOutputStream.writeInt(bytes.length);
-                dataOutputStream.write(bytes);
+                partitionToByte.get(partition).add(bytes);
+                partitionToTotalSize.put(partition, partitionToTotalSize.get(partition) + bytes.length + 4);
+            }
+            for (Map.Entry<Integer, List<byte[]>> entry : partitionToByte.entrySet()) {
+                Integer partition = entry.getKey();
+                List<byte[]> bytesList = entry.getValue();
+                DataOutputStream dataOutputStream = outputStreamMap.get(partition);
+                int totalSize = partitionToTotalSize.get(partition);
+                dataOutputStream.writeInt(totalSize);
+                for (byte[] bytes : bytesList) {
+                    dataOutputStream.writeInt(bytes.length);
+                    dataOutputStream.write(bytes);
+                }
             }
         } finally {
             for (DataOutputStream dataOutputStream : outputStreamMap.values()) {
-                dataOutputStream.writeInt(-1);
                 dataOutputStream.close();
             }
         }

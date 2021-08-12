@@ -1,4 +1,4 @@
-package com.github.pidan.batch.runtime;
+package com.github.pidan.batch.runtime.event;
 
 import java.io.Serializable;
 

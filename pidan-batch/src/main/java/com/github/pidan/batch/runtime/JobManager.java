@@ -1,6 +1,9 @@
 package com.github.pidan.batch.runtime;
 
-import com.github.pidan.batch.runtime.util.SerializableUtil;
+import com.github.pidan.batch.runtime.event.Event;
+import com.github.pidan.batch.runtime.event.ExecutorInitSuccessEvent;
+import com.github.pidan.batch.runtime.event.TaskEvent;
+import com.github.pidan.core.util.SerializableUtil;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.*;
@@ -10,17 +13,22 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.util.ReferenceCountUtil;
 
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.*;
+
+import static com.github.pidan.core.configuration.Constant.JOB_MANAGER_PORT;
 
 public class JobManager {
     private final ChannelFuture future;
     private final int executorNum;
     private final InetSocketAddress bindAddress;
-    private final ConcurrentMap<SocketAddress, DriverNetManagerHandler> executorHandlers = new ConcurrentHashMap<>();
+    private final ConcurrentMap<InetSocketAddress, DriverNetManagerHandler> executorHandlers = new ConcurrentHashMap<>();
     private final BlockingQueue<TaskEvent> queue = new LinkedBlockingQueue<>(65536);
 
     public JobManager(int executorNum) {
@@ -36,12 +44,12 @@ public class JobManager {
                 .childOption(ChannelOption.TCP_NODELAY, true)
                 .childHandler(new ChannelInitializer<SocketChannel>() {
                     @Override
-                    protected void initChannel(SocketChannel ch) throws Exception {
+                    protected void initChannel(SocketChannel ch) {
                         ch.pipeline().addLast(new DriverNetManagerHandler());
                     }
                 });
         try {
-            this.future = serverBootstrap.bind(0).sync();
+            this.future = serverBootstrap.bind(JOB_MANAGER_PORT).sync();
             int bindPort = ((InetSocketAddress) future.channel().localAddress()).getPort();
             this.bindAddress = InetSocketAddress.createUnresolved(InetAddress.getLocalHost().getHostName(), bindPort);
             future.channel().closeFuture().addListener((ChannelFutureListener) channelFuture -> {
@@ -57,6 +65,14 @@ public class JobManager {
         return bindAddress;
     }
 
+    public InetSocketAddress submitTask(Task<?> task) {
+        List<InetSocketAddress> addresses = new ArrayList<>(executorHandlers.keySet());
+        //cache算子会使得Executor节点拥有状态，调度时应注意幂等
+        InetSocketAddress address = addresses.get(task.getTaskId() % executorNum);
+        executorHandlers.get(address).submitTask(task);
+        return address;
+    }
+
     public void awaitAllExecutorRegistered() {
         while (executorHandlers.size() != executorNum) {
             try {
@@ -67,8 +83,19 @@ public class JobManager {
         }
     }
 
-    private class DriverNetManagerHandler
-            extends LengthFieldBasedFrameDecoder {
+    public TaskEvent awaitTaskEvent() {
+        try {
+            return queue.take();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void stop() {
+        future.channel().close();
+    }
+
+    private class DriverNetManagerHandler extends LengthFieldBasedFrameDecoder {
         private ChannelHandlerContext executorChannel;
         private SocketAddress socketAddress;
 
@@ -77,7 +104,7 @@ public class JobManager {
         }
 
         @Override
-        public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        public void channelActive(ChannelHandlerContext ctx) {
             this.executorChannel = ctx;
         }
 
@@ -91,9 +118,14 @@ public class JobManager {
             byte[] bytes = new byte[len];
             in.readBytes(bytes);
             ReferenceCountUtil.release(in);
-            Event event = SerializableUtil.byteToObject(bytes);
+            Event event;
+            try {
+                event = SerializableUtil.byteToObject(bytes);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
             if (event instanceof ExecutorInitSuccessEvent) {
-                SocketAddress shuffleService = ((ExecutorInitSuccessEvent) event).getShuffleServiceAddress();
+                InetSocketAddress shuffleService = ((ExecutorInitSuccessEvent) event).getShuffleServiceAddress();
                 executorHandlers.put(shuffleService, this);
             } else if (event instanceof TaskEvent) {
                 queue.put((TaskEvent) event);
@@ -104,13 +136,17 @@ public class JobManager {
         }
 
         @Override
-        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         }
 
         public void submitTask(Task<?> task) {
             ByteBuf buffer = executorChannel.alloc().buffer();
             byte[] bytes;
-            bytes = SerializableUtil.serialize(task);
+            try {
+                bytes = SerializableUtil.serialize(task);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
             buffer.writeInt(bytes.length).writeBytes(bytes);
             executorChannel.writeAndFlush(buffer);
         }

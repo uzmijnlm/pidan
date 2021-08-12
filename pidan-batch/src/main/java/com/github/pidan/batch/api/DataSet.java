@@ -1,8 +1,8 @@
 package com.github.pidan.batch.api;
 
 import com.github.pidan.batch.environment.ExecutionEnvironment;
+import com.github.pidan.batch.runtime.TaskContext;
 import com.github.pidan.core.JoinType;
-import com.github.pidan.core.TaskContext;
 import com.github.pidan.core.function.*;
 import com.github.pidan.core.partition.Partition;
 import com.google.common.collect.ImmutableList;
@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 
 public abstract class DataSet<ROW> implements Serializable {
 
-    protected final ExecutionEnvironment env;
+    protected final transient ExecutionEnvironment env;
     protected final DataSet<?>[] dataSets;
 
     protected DataSet(ExecutionEnvironment env) {
@@ -66,7 +66,8 @@ public abstract class DataSet<ROW> implements Serializable {
     }
 
     public List<ROW> collect() {
-        return this.getExecutionEnvironment().runJob(this, ImmutableList::copyOf).stream()
+        return this.getExecutionEnvironment().runJob(this, ImmutableList::copyOf)
+                .stream()
                 .flatMap(Collection::stream)
                 .collect(Collectors.toList());
     }

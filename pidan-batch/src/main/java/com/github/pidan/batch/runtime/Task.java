@@ -1,8 +1,8 @@
 package com.github.pidan.batch.runtime;
 
-import com.github.pidan.core.TaskContext;
-
 import java.io.Serializable;
+import java.net.InetSocketAddress;
+import java.util.Map;
 
 public interface Task<OUT> extends Serializable {
     int getTaskId();
@@ -10,4 +10,8 @@ public interface Task<OUT> extends Serializable {
     OUT runTask(TaskContext taskContext);
 
     int getStageId();
+
+    Map<Integer, Map<Integer, InetSocketAddress>> getDependMapTasks();
+
+    Integer[] getDependencies();
 }

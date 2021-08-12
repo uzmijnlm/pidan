@@ -1,7 +1,7 @@
 package com.github.pidan.batch.api;
 
 import com.github.pidan.batch.environment.ExecutionEnvironment;
-import com.github.pidan.core.TaskContext;
+import com.github.pidan.batch.runtime.TaskContext;
 import com.github.pidan.core.partition.Partition;
 import com.github.pidan.core.partition.TextFilePartition;
 

@@ -1,8 +1,12 @@
 package com.github.pidan.batch.shuffle;
 
+import com.github.pidan.core.util.SerializableUtil;
 import com.google.common.collect.Iterators;
 
-import java.io.*;
+import java.io.DataInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Objects;
@@ -29,13 +33,17 @@ public class ShuffleReader implements Serializable {
                     ArrayList<Object> out = new ArrayList<>();
                     try {
                         DataInputStream dataInputStream = new DataInputStream(new FileInputStream(file));
-                        int length = dataInputStream.readInt();
-                        while (length != -1) {
+                        int totalSize = dataInputStream.readInt();
+                        if (totalSize == 0) {
+                            throw new RuntimeException("No data in file: " + file.getName());
+                        }
+                        do {
+                            int length = dataInputStream.readInt();
                             byte[] bytes = new byte[length];
                             dataInputStream.read(bytes);
-                            out.add(byteToObject(bytes));
-                            length = dataInputStream.readInt();
-                        }
+                            out.add(SerializableUtil.byteToObject(bytes));
+                            totalSize = totalSize - length - 4;
+                        } while (totalSize > 0);
                         dataInputStream.close();
                         return out.iterator();
                     } catch (Exception e) {
@@ -44,11 +52,5 @@ public class ShuffleReader implements Serializable {
                 }).iterator();
 
         return Iterators.concat(iterator);
-    }
-
-    private Object byteToObject(byte[] bytes) throws IOException, ClassNotFoundException {
-        ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(bytes);
-        ObjectInputStream objectInputStream = new ObjectInputStream(byteArrayInputStream);
-        return objectInputStream.readObject();
     }
 }

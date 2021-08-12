@@ -1,7 +1,7 @@
 package com.github.pidan.batch.shuffle;
 
 import com.github.pidan.batch.api.DataSet;
-import com.github.pidan.core.TaskContext;
+import com.github.pidan.batch.runtime.TaskContext;
 import com.github.pidan.core.partition.Partition;
 
 import java.io.Serializable;

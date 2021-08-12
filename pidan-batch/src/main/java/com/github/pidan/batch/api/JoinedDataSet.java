@@ -1,8 +1,8 @@
 package com.github.pidan.batch.api;
 
-import com.github.pidan.batch.shuffle.ShuffleReader;
+import com.github.pidan.batch.runtime.TaskContext;
+import com.github.pidan.batch.shuffle.ShuffleClient;
 import com.github.pidan.core.JoinType;
-import com.github.pidan.core.TaskContext;
 import com.github.pidan.core.function.HashPartitioner;
 import com.github.pidan.core.function.KeySelector;
 import com.github.pidan.core.function.Partitioner;
@@ -39,7 +39,7 @@ public class JoinedDataSet<I1, I2> implements Serializable {
     }
 
 
-    public class Where<KEY> {
+    public class Where<KEY> implements Serializable {
         private final KeySelector<I1, KEY> keySelector1;
 
         public Where(KeySelector<I1, KEY> keySelector1) {
@@ -92,8 +92,9 @@ public class JoinedDataSet<I1, I2> implements Serializable {
         public Iterator<Tuple2<I1, I2>> compute(Partition partition, TaskContext taskContext) {
             int[] deps = taskContext.getDependStages();
             int index = partition.getIndex();
-            Iterator<I1> leftIterator = (Iterator<I1>) new ShuffleReader(index, deps[0]).read();
-            Iterator<I2> rightIterator = (Iterator<I2>) new ShuffleReader(index, deps[1]).read();
+            ShuffleClient shuffleClient = taskContext.getShuffleClient();
+            Iterator<I1> leftIterator = (Iterator<I1>) shuffleClient.read(index, deps[0]);
+            Iterator<I2> rightIterator = (Iterator<I2>) shuffleClient.read(index, deps[1]);
             if (enableSortShuffle) {
                 Iterator<I1> sortedLeftIter = IteratorUtil.sortIterator(leftIterator, keySelector1);
                 Iterator<I2> sortedRightIter = IteratorUtil.sortIterator(rightIterator, keySelector2);

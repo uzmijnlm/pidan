@@ -31,4 +31,12 @@ public class Tuple2<T0, T1> extends Tuple {
     public int hashCode() {
         return Objects.hash(f0, f1);
     }
+
+    @Override
+    public String toString() {
+        return "Tuple2{" +
+                "f0=" + f0 +
+                ", f1=" + f1 +
+                '}';
+    }
 }
