@@ -5,7 +5,7 @@ import com.github.pidan.batch.shuffle.ShuffleWriter;
 import com.github.pidan.core.function.KeySelector;
 import com.github.pidan.core.function.Partitioner;
 import com.github.pidan.core.partition.Partition;
-import com.sun.xml.internal.xsom.impl.scd.Iterators;
+import com.github.pidan.core.util.IteratorUtil;
 
 import java.io.IOException;
 import java.util.Iterator;
@@ -40,7 +40,7 @@ public class ShuffleMapOperator<KEY, ROW> extends DataSet<ROW> {
         } catch (IOException e) {
             throw new RuntimeException("shuffle map task failed", e);
         }
-        return Iterators.empty();
+        return IteratorUtil.empty();
     }
 
 }

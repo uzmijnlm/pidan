@@ -12,6 +12,20 @@ import java.util.stream.Stream;
 
 public class IteratorUtil {
 
+    public static <ROW> Iterator<ROW> empty() {
+        return new Iterator<ROW>() {
+            @Override
+            public boolean hasNext() {
+                return false;
+            }
+
+            @Override
+            public ROW next() {
+                throw new NoSuchElementException();
+            }
+        };
+    }
+
     public static <ROW, KEY> Iterator<ROW> sortIterator(Iterator<ROW> iterator,
                                                         KeySelector<ROW, KEY> keySelector) {
         List<ROW> list = new ArrayList<>();

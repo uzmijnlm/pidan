@@ -13,6 +13,7 @@
         <module>pidan-core</module>
         <module>pidan-example</module>
         <module>pidan-batch</module>
+        <module>pidan-dist</module>
     </modules>
 
     <properties>

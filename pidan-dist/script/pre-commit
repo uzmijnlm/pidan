@@ -1,0 +1,4 @@
+git_path=$(dirname "$0")
+cd "${git_path}" || exit
+cd ../.. # go to project directory from .git
+mvn clean test
